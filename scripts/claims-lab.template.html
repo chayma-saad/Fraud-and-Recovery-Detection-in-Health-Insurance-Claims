@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Claims Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme: light dark;
+    --ground:#F1F3EF; --surface:#E8EBE5; --surface-2:#DEE3DA;
+    --ink:#16231D; --ink-soft:#3E4C44; --ink-mute:#66766C;
+    --rule:#D2D9CE; --rule-strong:#B9C3B4;
+    --teal:#1B6E5C; --teal-soft:#D9EAE4;
+    --red:#A32B1F; --red-soft:#F3DFDA;
+    --gold:#93691E; --gold-soft:#EFE2C4;
+    --safe:#1B6E5C; --danger:#A32B1F;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0F1510; --surface:#161D15; --surface-2:#1E271C;
+      --ink:#ECF1E9; --ink-soft:#C3CEC3; --ink-mute:#8CA095;
+      --rule:#2A342A; --rule-strong:#3A473A;
+      --teal:#4CB89A; --teal-soft:#173229;
+      --red:#E2694F; --red-soft:#3A1E19;
+      --gold:#D7AE5C; --gold-soft:#332A16;
+      --safe:#4CB89A; --danger:#E2694F;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0F1510; --surface:#161D15; --surface-2:#1E271C;
+    --ink:#ECF1E9; --ink-soft:#C3CEC3; --ink-mute:#8CA095;
+    --rule:#2A342A; --rule-strong:#3A473A;
+    --teal:#4CB89A; --teal-soft:#173229;
+    --red:#E2694F; --red-soft:#3A1E19;
+    --gold:#D7AE5C; --gold-soft:#332A16;
+    --safe:#4CB89A; --danger:#E2694F;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.serif{font-family:"Source Serif 4", Georgia, serif; text-wrap:balance; font-weight:600; letter-spacing:-0.01em;}
+  .mono{font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  svg text{font-family:"IBM Plex Mono", ui-monospace, monospace;}
+  button{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+  ::selection{background:var(--gold-soft); color:var(--ink);}
+
+  .shell{max-width:1180px; margin:0 auto; padding:0 20px 60px;}
+
+  header.top{padding:28px 0 18px; border-bottom:1px solid var(--rule);}
+  header.top .eyebrow{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-mute); margin:0 0 6px;}
+  header.top .eyebrow::before{content:"◆ "; color:var(--teal);}
+  header.top h1{font-size:clamp(26px,4vw,34px); margin:0 0 8px;}
+  header.top p{font-size:14.5px; color:var(--ink-soft); max-width:70ch; margin:0;}
+
+  nav.tabs{
+    display:flex; gap:2px; margin-top:22px; border-bottom:1px solid var(--rule);
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    background:none; border:none; cursor:pointer; padding:12px 18px 13px;
+    font-size:14px; font-weight:600; color:var(--ink-mute);
+    border-bottom:2px solid transparent; white-space:nowrap;
+    display:flex; align-items:center; gap:8px;
+  }
+  nav.tabs button .num{font-family:"IBM Plex Mono"; font-size:11px; border:1px solid currentColor; padding:1px 6px; border-radius:2px;}
+  nav.tabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--teal);}
+  nav.tabs button:hover{color:var(--ink);}
+
+  .panel{display:none; padding-top:26px;}
+  .panel.active{display:block;}
+  .panel .lede{font-size:14.5px; color:var(--ink-soft); max-width:74ch; margin:0 0 22px;}
+
+  .workbench{display:grid; grid-template-columns:300px 1fr; gap:20px; align-items:start;}
+  @media (max-width:840px){.workbench{grid-template-columns:1fr;}}
+
+  .picker{
+    background:var(--surface); border:1px solid var(--rule); border-radius:4px;
+    max-height:640px; overflow-y:auto;
+  }
+  .picker-item{
+    display:block; width:100%; text-align:left; background:none; border:none;
+    border-bottom:1px solid var(--rule); padding:12px 14px; cursor:pointer;
+  }
+  .picker-item:last-child{border-bottom:none;}
+  .picker-item:hover{background:var(--surface-2);}
+  .picker-item.selected{background:var(--teal-soft); box-shadow:inset 3px 0 0 var(--teal);}
+  .picker-item .pi-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .picker-item .pi-amount{font-family:"IBM Plex Mono"; font-size:13.5px; font-weight:600; color:var(--ink);}
+  .picker-item .pi-badges{display:flex; gap:5px; flex-wrap:wrap; margin-top:6px;}
+  .badge{
+    font-size:10.5px; padding:2px 7px; border-radius:20px; border:1px solid var(--rule-strong);
+    color:var(--ink-mute); font-family:"IBM Plex Mono"; letter-spacing:.02em;
+  }
+  .badge.success{border-color:var(--safe); color:var(--safe);}
+  .badge.caught{border-color:var(--danger); color:var(--danger);}
+  .badge.actual-1{background:var(--gold-soft); border-color:var(--gold); color:var(--gold);}
+
+  .stage{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:22px 24px;}
+  .stage h3{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-mute); font-family:"IBM Plex Sans"; font-weight:600; margin:0 0 14px;}
+
+  .fact-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;}
+  .fact{
+    font-size:12px; padding:5px 10px; background:var(--surface-2); border-radius:3px; color:var(--ink-soft);
+  }
+  .fact strong{color:var(--ink); font-weight:600;}
+
+  /* --- gauges --- */
+  .gauge-block{margin-bottom:16px;}
+  .gauge-label{display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:5px;}
+  .gauge-label .name{color:var(--ink-soft); font-weight:600;}
+  .gauge-label .val{font-family:"IBM Plex Mono"; font-weight:600;}
+  .gauge-track{position:relative; height:22px; background:var(--surface-2); border-radius:3px; overflow:hidden; border:1px solid var(--rule);}
+  .gauge-fill{position:absolute; top:0; left:0; bottom:0; border-radius:3px 0 0 3px; transition:width .35s ease, background .2s ease;}
+  .gauge-fill.safe{background:var(--safe);}
+  .gauge-fill.danger{background:var(--danger);}
+  .gauge-tick{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ink);}
+  .gauge-tick::after{
+    content:attr(data-label); position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+    font-size:9.5px; color:var(--ink-mute); font-family:"IBM Plex Mono"; white-space:nowrap;
+  }
+  .verdict{
+    display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600;
+    padding:4px 10px; border-radius:3px; margin-top:4px;
+  }
+  .verdict.safe{background:var(--teal-soft); color:var(--teal);}
+  .verdict.danger{background:var(--red-soft); color:var(--red);}
+
+  /* --- tab 1: simulator controls --- */
+  .budget-readout{display:flex; gap:22px; margin-bottom:18px; flex-wrap:wrap;}
+  .budget-readout .metric .num{font-family:"IBM Plex Mono"; font-size:22px; font-weight:600; display:block;}
+  .budget-readout .metric .lab{font-size:11px; color:var(--ink-mute); text-transform:uppercase; letter-spacing:.05em;}
+
+  .slider-row{display:flex; align-items:center; gap:14px; margin-bottom:6px;}
+  .slider-row input[type="range"]{flex:1; accent-color:var(--teal);}
+  .slider-row .pct{font-family:"IBM Plex Mono"; font-size:13px; width:48px; text-align:right;}
+  .btn{
+    font-family:"IBM Plex Sans"; font-size:13.5px; font-weight:600; padding:9px 18px;
+    border-radius:3px; border:1px solid var(--ink); background:var(--ink); color:var(--ground);
+    cursor:pointer;
+  }
+  .btn:hover{opacity:.88;}
+  .btn:disabled{opacity:.35; cursor:not-allowed;}
+  .btn.ghost{background:none; color:var(--ink); border-color:var(--rule-strong);}
+
+  .steplog{margin-top:20px; border-top:1px solid var(--rule); padding-top:14px;}
+  .steplog-row{
+    display:grid; grid-template-columns:28px 1fr auto auto; gap:10px; align-items:center;
+    font-size:12.5px; padding:7px 0; border-bottom:1px dashed var(--rule);
+  }
+  .steplog-row .step-n{font-family:"IBM Plex Mono"; color:var(--ink-mute);}
+  .steplog-row .amt{font-family:"IBM Plex Mono"; font-weight:600;}
+
+  .game-result{
+    margin-top:16px; padding:14px 16px; border-radius:4px; font-size:14px;
+  }
+  .game-result.win{background:var(--red-soft); color:var(--ink);}
+  .game-result.lose{background:var(--teal-soft); color:var(--ink);}
+
+  .caveat{font-size:11.5px; color:var(--ink-mute); margin-top:16px; border-top:1px solid var(--rule); padding-top:12px;}
+
+  /* --- tab 2: episode player --- */
+  .replay-track{display:flex; flex-direction:column; gap:14px;}
+  .replay-track .track-label{font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-mute); font-weight:600;}
+  .step-dots{display:flex; gap:6px; margin:10px 0 18px;}
+  .step-dot{
+    width:26px; height:26px; border-radius:50%; border:1.5px solid var(--rule-strong);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-family:"IBM Plex Mono";
+    color:var(--ink-mute); background:var(--surface);
+  }
+  .step-dot.done{border-color:var(--ink-mute); color:var(--ink);}
+  .step-dot.current{border-color:var(--teal); color:var(--teal); background:var(--teal-soft);}
+  .step-dot.caught{border-color:var(--danger); background:var(--red-soft); color:var(--danger);}
+
+  .player-controls{display:flex; gap:10px; margin-top:18px;}
+
+  /* --- tab 3: SHAP --- */
+  .prob-hero{display:flex; align-items:baseline; gap:16px; margin-bottom:20px;}
+  .prob-hero .big{font-family:"IBM Plex Mono"; font-size:38px; font-weight:600;}
+  .prob-hero .sub{font-size:13px; color:var(--ink-mute);}
+
+  .waterfall-row{display:grid; grid-template-columns:170px 1fr 62px; gap:10px; align-items:center; margin-bottom:9px;}
+  .waterfall-row .fname{font-size:12.5px; color:var(--ink-soft); text-align:right;}
+  .waterfall-bar-track{position:relative; height:16px; background:var(--surface-2); border-radius:2px;}
+  .waterfall-bar{position:absolute; top:0; bottom:0; border-radius:2px;}
+  .waterfall-bar.up{background:var(--red); left:50%;}
+  .waterfall-bar.down{background:var(--teal); right:50%;}
+  .waterfall-mid{position:absolute; left:50%; top:-3px; bottom:-3px; width:1px; background:var(--rule-strong);}
+  .waterfall-val{font-family:"IBM Plex Mono"; font-size:11.5px; text-align:left;}
+
+  footer.app-footer{padding:36px 0 10px; font-size:11.5px; color:var(--ink-mute); border-top:1px solid var(--rule); margin-top:40px;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="top">
+    <p class="eyebrow">Al Hilal Takaful &middot; Interactive Model Lab</p>
+    <h1>The Claims Lab</h1>
+    <p>Three real, trained models from this project, running live in your
+      browser. Try to beat the fraud defender yourself, watch the trained
+      AI agent's actual recorded attacks, or ask the recovery-risk model
+      why it flagged a specific claim.</p>
+
+    <nav class="tabs" role="tablist" aria-label="Lab sections">
+      <button role="tab" aria-selected="true" aria-controls="panel-beat" id="tab-beat" data-tab="beat">
+        <span class="num">01</span> Beat the Defender
+      </button>
+      <button role="tab" aria-selected="false" aria-controls="panel-watch" id="tab-watch" data-tab="watch">
+        <span class="num">02</span> Watch the Agent
+      </button>
+      <button role="tab" aria-selected="false" aria-controls="panel-shap" id="tab-shap" data-tab="shap">
+        <span class="num">03</span> Explain a Claim
+      </button>
+    </nav>
+  </header>
+
+  <!-- ============================================================ -->
+  <section class="panel active" id="panel-beat" role="tabpanel" aria-labelledby="tab-beat">
+    <p class="lede">Pick a claim template, then decide how to submit your
+      fraud budget &mdash; one big claim, or split across up to 5 smaller
+      ones. Every submission is scored live by the real <code>defender_v1</code>
+      and <code>defender_v2</code> XGBoost models (the same ones from Exhibit C).
+      <code>defender_v1</code> is the one that decides if you're caught,
+      exactly as it did during training.</p>
+    <div class="workbench">
+      <div class="picker" id="beat-picker" role="listbox" aria-label="Baseline claims"></div>
+      <div class="stage" id="beat-stage"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="panel" id="panel-watch" role="tabpanel" aria-labelledby="tab-watch">
+    <p class="lede">24 real episodes recorded from the trained PPO agent
+      (Exhibit C, Step 6) &mdash; its actual chosen actions, not a
+      simulation. Step through each submission and watch both defenders
+      react to the exact same attack, including the cases where retraining
+      flipped the outcome.</p>
+    <div class="workbench">
+      <div class="picker" id="watch-picker" role="listbox" aria-label="Recorded episodes"></div>
+      <div class="stage" id="watch-stage"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="panel" id="panel-shap" role="tabpanel" aria-labelledby="tab-shap">
+    <p class="lede">24 real 2016 test claims scored by Phase 3's XGBoost
+      recovery-risk model, with SHAP values showing exactly which features
+      pushed the prediction up or down for that specific claim &mdash; not
+      just what matters on average, but why <em>this</em> claim was flagged.</p>
+    <div class="workbench">
+      <div class="picker" id="shap-picker" role="listbox" aria-label="Test claims"></div>
+      <div class="stage" id="shap-stage"></div>
+    </div>
+  </section>
+
+  <footer class="app-footer">
+    <p>All models and data are real outputs of this project &mdash;
+      <code>defender_v1.json</code> / <code>defender_v2.json</code> (Exhibit C),
+      the trained PPO policy's recorded episodes, and Phase 3's XGBoost +
+      SHAP explanations (Exhibit B) &mdash; embedded directly in this file.
+      No server, no account, nothing leaves your browser.</p>
+  </footer>
+</div>
+
+<script id="app-data" type="application/json">%%APP_DATA%%</script>
+<script>
+(function(){
+"use strict";
+const DATA = JSON.parse(document.getElementById("app-data").textContent);
+
+// ---------------------------------------------------------------------
+// XGBoost tree evaluator (verified bit-exact against xgboost.predict_proba
+// for the vast majority of inputs; near-threshold float32/float64 boundary
+// cases can differ by up to ~0.003 in probability -- see the caveat note
+// in the Beat the Defender panel).
+function predictProba(defender, x){
+  let margin = 0;
+  const trees = defender.trees;
+  for(let ti=0; ti<trees.length; ti++){
+    const t = trees[ti];
+    let i = 0;
+    while(t.l[i] !== -1){
+      i = (x[t.f[i]] < t.c[i]) ? t.l[i] : t.r[i];
+    }
+    margin += t.c[i];
+  }
+  const bs = defender.baseScore;
+  const baseMargin = (bs === 0 || bs === 1) ? 0 : Math.log(bs/(1-bs));
+  return 1/(1+Math.exp(-(margin+baseMargin)));
+}
+
+function encodeAmountOnly(baseEncoded, newAmount){
+  const out = baseEncoded.slice();
+  const sAmt = DATA.simulator.continuousScale.amount;
+  const sLog = DATA.simulator.continuousScale.log;
+  out[DATA.simulator.amountIdx] = (newAmount - sAmt.mean) / sAmt.std;
+  out[DATA.simulator.logAmountIdx] = (Math.log1p(newAmount) - sLog.mean) / sLog.std;
+  return out;
+}
+
+function fmtMoney(v){ return "AED " + v.toLocaleString(undefined,{maximumFractionDigits:0}); }
+function fmtPct(v){ return (v*100).toFixed(2) + "%"; }
+function esc(s){ return String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+function gaugeHTML(name, proba, threshold, caught){
+  const pct = Math.min(proba*100, 100);
+  const tickPct = Math.min(threshold*100, 100);
+  const cls = caught ? "danger" : "safe";
+  return `
+    <div class="gauge-block">
+      <div class="gauge-label"><span class="name">${esc(name)}</span><span class="val mono">${fmtPct(proba)}</span></div>
+      <div class="gauge-track">
+        <div class="gauge-fill ${cls}" style="width:${pct}%"></div>
+        <div class="gauge-tick" style="left:${tickPct}%" data-label="threshold ${fmtPct(threshold)}"></div>
+      </div>
+      <span class="verdict ${cls}">${caught ? "&#10005; FLAGGED" : "&#10003; PASSED"}</span>
+    </div>`;
+}
+
+// =======================================================================
+// TAB SWITCHING
+// =======================================================================
+const tabButtons = Array.from(document.querySelectorAll("nav.tabs button"));
+tabButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    tabButtons.forEach(b => b.setAttribute("aria-selected", b === btn ? "true" : "false"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+// =======================================================================
+// TAB 1: BEAT THE DEFENDER
+// =======================================================================
+const beatPicker = document.getElementById("beat-picker");
+const beatStage = document.getElementById("beat-stage");
+let gameState = null;
+
+function claimSummaryBadges(c){
+  return `<span class="badge">${esc(c.provider_type)}</span><span class="badge">${esc(c.provider_emirate)}</span><span class="badge">${esc(c.fob)}</span>`;
+}
+
+DATA.simulator.baselineClaims.forEach((c, idx) => {
+  const el = document.createElement("button");
+  el.className = "picker-item"; el.type = "button"; el.role = "option";
+  el.dataset.idx = idx;
+  el.innerHTML = `<div class="pi-top"><span>${esc(c.ageband)} &middot; ${esc(c.gender)}</span><span class="pi-amount">${fmtMoney(c.amount)}</span></div>
+    <div class="pi-badges">${claimSummaryBadges(c)}</div>`;
+  el.addEventListener("click", () => selectBaselineClaim(idx));
+  beatPicker.appendChild(el);
+});
+
+function selectBaselineClaim(idx){
+  Array.from(beatPicker.children).forEach(el => el.classList.toggle("selected", Number(el.dataset.idx) === idx));
+  const claim = DATA.simulator.baselineClaims[idx];
+  const budgetTotal = claim.amount * DATA.simulator.budgetMultiplier;
+  gameState = {
+    claim, budgetTotal, remaining: budgetTotal, kept: 0,
+    steps: [], over: false, cause: null,
+  };
+  renderBeatStage();
+}
+
+function renderBeatStage(){
+  if(!gameState){
+    beatStage.innerHTML = `<p style="color:var(--ink-mute);font-size:14px;">&larr; Pick a claim template to begin.</p>`;
+    return;
+  }
+  const gs = gameState;
+  const fracDefault = 100;
+  let html = `
+    <h3>Claim ${gs.claim.ageband} &middot; ${esc(gs.claim.provider_type)}, ${esc(gs.claim.provider_emirate)}</h3>
+    <div class="fact-row">
+      <span class="fact">Legit amount <strong>${fmtMoney(gs.claim.amount)}</strong></span>
+      <span class="fact">${esc(gs.claim.fob)}</span>
+      <span class="fact">${esc(gs.claim.icd_chapter)}</span>
+      <span class="fact">${esc(gs.claim.network_type)}</span>
+      <span class="fact">${gs.claim.chronic === "Yes" ? "Chronic condition" : "No chronic condition"}</span>
+    </div>
+    <div class="budget-readout">
+      <div class="metric"><span class="num mono">${fmtMoney(gs.budgetTotal)}</span><span class="lab">Fraud budget (3&times; legit)</span></div>
+      <div class="metric"><span class="num mono">${fmtMoney(gs.remaining)}</span><span class="lab">Remaining</span></div>
+      <div class="metric"><span class="num mono">${fmtMoney(gs.kept)}</span><span class="lab">Banked so far</span></div>
+      <div class="metric"><span class="num mono">${gs.steps.length} / ${DATA.simulator.maxSteps}</span><span class="lab">Submissions used</span></div>
+    </div>`;
+
+  if(!gs.over && gs.steps.length < DATA.simulator.maxSteps && gs.remaining > 1){
+    html += `
+    <div id="beat-controls">
+      <label style="font-size:12.5px;color:var(--ink-soft);">Claim what fraction of the remaining ${fmtMoney(gs.remaining)}?</label>
+      <div class="slider-row">
+        <input type="range" min="1" max="100" value="${fracDefault}" id="beat-slider">
+        <span class="pct mono" id="beat-slider-pct">100%</span>
+      </div>
+      <div id="beat-preview" style="margin:14px 0;"></div>
+      <button class="btn" id="beat-submit">Submit this claim</button>
+    </div>`;
+  }
+
+  html += `<div class="steplog" id="beat-steplog"></div>`;
+
+  if(gs.over){
+    const label = gs.cause === "caught"
+      ? `Flagged and caught. You forfeited the remaining ${fmtMoney(gs.budgetTotal - gs.kept)} on top of this submission.`
+      : `You extracted ${fmtMoney(gs.kept)} of the ${fmtMoney(gs.budgetTotal)} budget (${Math.round(100*gs.kept/gs.budgetTotal)}%) without ever being flagged by defender_v1.`;
+    html += `<div class="game-result ${gs.cause === 'caught' ? 'lose' : 'win'}"><strong>${gs.cause === 'caught' ? 'Caught.' : 'Got away with it.'}</strong> ${label}</div>
+      <button class="btn ghost" id="beat-reset" style="margin-top:12px;">Try another split on this claim</button>`;
+  }
+
+  html += `<p class="caveat">Live inference note: the tree evaluator above runs the real <code>defender_v1</code>/<code>defender_v2</code> models in JavaScript. It matches the Python models almost exactly; in rare cases where a chosen amount lands extremely close to a tree's split threshold, the verdict can differ by a fraction of a percent from the original training run. The recorded agent episodes in tab 02 are unaffected &mdash; those probabilities were captured directly from the real Python models.</p>`;
+
+  beatStage.innerHTML = html;
+  renderBeatSteplog();
+
+  const slider = document.getElementById("beat-slider");
+  const submitBtn = document.getElementById("beat-submit");
+  if(slider){
+    const updatePreview = () => {
+      const frac = Number(slider.value)/100;
+      document.getElementById("beat-slider-pct").textContent = Math.round(frac*100) + "%";
+      const amount = frac * gs.remaining;
+      const encoded = encodeAmountOnly(gs.claim.encoded, amount);
+      const p1 = predictProba(DATA.defenders.v1, encoded);
+      const p2 = predictProba(DATA.defenders.v2, encoded);
+      const preview = document.getElementById("beat-preview");
+      preview.innerHTML = `<div style="font-size:12px;color:var(--ink-mute);margin-bottom:8px;">If you submit ${fmtMoney(amount)} now:</div>` +
+        gaugeHTML("defender_v1 (decides outcome)", p1, DATA.simulator.thresholdV1, p1 >= DATA.simulator.thresholdV1) +
+        gaugeHTML("defender_v2 (retrained, for comparison)", p2, DATA.simulator.thresholdV2, p2 >= DATA.simulator.thresholdV2);
+    };
+    slider.addEventListener("input", updatePreview);
+    updatePreview();
+    submitBtn.addEventListener("click", () => {
+      const frac = Number(slider.value)/100;
+      const amount = frac * gs.remaining;
+      const encoded = encodeAmountOnly(gs.claim.encoded, amount);
+      const p1 = predictProba(DATA.defenders.v1, encoded);
+      const caught = p1 >= DATA.simulator.thresholdV1;
+      gs.steps.push({amount, proba: p1, caught});
+      if(caught){
+        gs.over = true; gs.cause = "caught";
+      } else {
+        gs.remaining -= amount; gs.kept += amount;
+        if(gs.remaining <= 1 || gs.steps.length >= DATA.simulator.maxSteps){
+          gs.over = true; gs.cause = "success";
+        }
+      }
+      renderBeatStage();
+    });
+  }
+  const resetBtn = document.getElementById("beat-reset");
+  if(resetBtn){
+    resetBtn.addEventListener("click", () => {
+      gs.remaining = gs.budgetTotal; gs.kept = 0; gs.steps = []; gs.over = false; gs.cause = null;
+      renderBeatStage();
+    });
+  }
+}
+
+function renderBeatSteplog(){
+  const log = document.getElementById("beat-steplog");
+  if(!log) return;
+  if(gameState.steps.length === 0){ log.innerHTML = ""; return; }
+  log.innerHTML = gameState.steps.map((s,i) => `
+    <div class="steplog-row">
+      <span class="step-n">#${i+1}</span>
+      <span>${s.caught ? "Flagged by defender_v1" : "Passed"}</span>
+      <span class="amt">${fmtMoney(s.amount)}</span>
+      <span class="${s.caught ? 'badge caught' : 'badge success'}">${fmtPct(s.proba)}</span>
+    </div>`).join("");
+}
+
+// =======================================================================
+// TAB 2: WATCH THE AGENT
+// =======================================================================
+const watchPicker = document.getElementById("watch-picker");
+const watchStage = document.getElementById("watch-stage");
+let watchState = null;
+
+DATA.simulator.episodes.forEach((ep, idx) => {
+  const el = document.createElement("button");
+  el.className = "picker-item"; el.type = "button"; el.role = "option";
+  el.dataset.idx = idx;
+  const diverged = ep.outcome_v1 !== ep.outcome_v2;
+  el.innerHTML = `<div class="pi-top"><span>${esc(ep.claim.ageband)} &middot; ${esc(ep.claim.provider_type)}</span><span class="pi-amount">${fmtMoney(ep.budget_total)}</span></div>
+    <div class="pi-badges">
+      <span class="badge ${ep.outcome_v1}">v1: ${ep.outcome_v1}</span>
+      <span class="badge ${ep.outcome_v2}">v2: ${ep.outcome_v2}</span>
+      ${diverged ? '<span class="badge" style="border-color:var(--gold);color:var(--gold);">diverges</span>' : ''}
+    </div>`;
+  el.addEventListener("click", () => selectEpisode(idx));
+  watchPicker.appendChild(el);
+});
+
+function selectEpisode(idx){
+  Array.from(watchPicker.children).forEach(el => el.classList.toggle("selected", Number(el.dataset.idx) === idx));
+  const ep = DATA.simulator.episodes[idx];
+  watchState = {ep, step: 0};
+  renderWatchStage();
+}
+
+function renderWatchStage(){
+  if(!watchState){
+    watchStage.innerHTML = `<p style="color:var(--ink-mute);font-size:14px;">&larr; Pick a recorded episode to replay it.</p>`;
+    return;
+  }
+  const {ep, step} = watchState;
+  const totalSteps = ep.steps_v1.length;
+  const shown = Math.min(step+1, totalSteps);
+
+  let dots = "";
+  for(let i=0;i<totalSteps;i++){
+    let cls = "step-dot";
+    if(i < shown-1) cls += " done";
+    else if(i === shown-1) cls += ep.steps_v1[i].caught ? " caught" : " current";
+    dots += `<div class="${cls}">${i+1}</div>`;
+  }
+
+  let html = `
+    <h3>Recorded episode &middot; ${esc(ep.claim.ageband)}, ${esc(ep.claim.provider_type)} in ${esc(ep.claim.provider_emirate)}</h3>
+    <div class="fact-row">
+      <span class="fact">Legit amount <strong>${fmtMoney(ep.claim.amount)}</strong></span>
+      <span class="fact">Fraud budget <strong>${fmtMoney(ep.budget_total)}</strong></span>
+      <span class="fact">${esc(ep.claim.fob)}</span>
+      <span class="fact">${esc(ep.claim.network_type)}</span>
+    </div>
+    <div class="step-dots">${dots}</div>
+    <div class="workbench" style="grid-template-columns:1fr 1fr;gap:24px;">
+      <div class="replay-track"><div class="track-label">defender_v1 (trained against)</div><div id="watch-v1"></div></div>
+      <div class="replay-track"><div class="track-label">defender_v2 (retrained, same actions)</div><div id="watch-v2"></div></div>
+    </div>
+    <div class="player-controls">
+      <button class="btn ghost" id="watch-restart">Restart</button>
+      <button class="btn" id="watch-next" ${shown>=totalSteps ? 'disabled' : ''}>Next submission &rarr;</button>
+    </div>`;
+
+  const v1CaughtBy = ep.steps_v1.findIndex(s => s.caught);
+  const v2CaughtBy = ep.steps_v2.findIndex(s => s.caught);
+  if(shown >= totalSteps || (v1CaughtBy>=0 && v1CaughtBy < shown) ){
+    const finalV1 = ep.outcome_v1;
+    const finalV2 = v2CaughtBy>=0 && v2CaughtBy < shown ? "caught" : (shown >= ep.steps_v2.length ? ep.outcome_v2 : "in progress");
+    html += `<div class="game-result ${finalV1==='caught' ? 'lose' : 'win'}" style="margin-top:20px;">
+      <strong>Final:</strong> against the original defender this attack ${finalV1 === 'caught' ? 'was <strong>caught</strong>' : 'was <strong>successful</strong>'}.
+      Against the retrained defender, the exact same actions were ${finalV2 === 'caught' ? '<strong>caught</strong>' : finalV2 === 'in progress' ? 'still playing out' : '<strong>successful</strong>'}.
+      ${ep.outcome_v1 !== ep.outcome_v2 ? ' <em>This is one of the cases where retraining changed the outcome.</em>' : ''}
+    </div>`;
+  }
+
+  watchStage.innerHTML = html;
+
+  const v1box = document.getElementById("watch-v1");
+  const v2box = document.getElementById("watch-v2");
+  let v1html = "", v2html = "";
+  for(let i=0;i<shown;i++){
+    const s1 = ep.steps_v1[i];
+    v1html += gaugeHTML(`Submission #${i+1} &middot; ${fmtMoney(s1.amount)}`, s1.proba, DATA.simulator.thresholdV1, s1.caught);
+    if(i < ep.steps_v2.length){
+      const s2 = ep.steps_v2[i];
+      v2html += gaugeHTML(`Submission #${i+1} &middot; ${fmtMoney(s2.amount)}`, s2.proba, DATA.simulator.thresholdV2, s2.caught);
+    }
+  }
+  v1box.innerHTML = v1html || '<p style="color:var(--ink-mute);font-size:13px;">Press "Next submission" to begin.</p>';
+  v2box.innerHTML = v2html || '<p style="color:var(--ink-mute);font-size:13px;">Press "Next submission" to begin.</p>';
+
+  document.getElementById("watch-next").addEventListener("click", () => {
+    watchState.step = Math.min(watchState.step+1, totalSteps-1);
+    renderWatchStage();
+  });
+  document.getElementById("watch-restart").addEventListener("click", () => {
+    watchState.step = 0;
+    renderWatchStage();
+  });
+}
+
+// =======================================================================
+// TAB 3: EXPLAIN A CLAIM (SHAP)
+// =======================================================================
+const shapPicker = document.getElementById("shap-picker");
+const shapStage = document.getElementById("shap-stage");
+
+DATA.shap.claims.forEach((c, idx) => {
+  const el = document.createElement("button");
+  el.className = "picker-item"; el.type = "button"; el.role = "option";
+  el.dataset.idx = idx;
+  el.innerHTML = `<div class="pi-top"><span>${esc(c.provider_type)}, ${esc(c.provider_emirate)}</span><span class="pi-amount">${fmtMoney(c.amount)}</span></div>
+    <div class="pi-badges">
+      <span class="badge ${c.predicted_proba >= 0.5 ? 'caught' : 'success'}">risk ${fmtPct(c.predicted_proba)}</span>
+      ${c.actual_label === 1 ? '<span class="badge actual-1">actually recovered</span>' : ''}
+    </div>`;
+  el.addEventListener("click", () => selectShapClaim(idx));
+  shapPicker.appendChild(el);
+});
+
+function selectShapClaim(idx){
+  Array.from(shapPicker.children).forEach(el => el.classList.toggle("selected", Number(el.dataset.idx) === idx));
+  const c = DATA.shap.claims[idx];
+  const maxAbs = Math.max(...c.contributions.map(x => Math.abs(x.shap)), 0.01);
+
+  let rows = c.contributions.map(ct => {
+    const isUp = ct.shap >= 0;
+    const widthPct = (Math.abs(ct.shap)/maxAbs) * 48;
+    return `<div class="waterfall-row">
+      <span class="fname">${esc(ct.feature)}</span>
+      <div class="waterfall-bar-track">
+        <div class="waterfall-mid"></div>
+        <div class="waterfall-bar ${isUp?'up':'down'}" style="width:${widthPct}%"></div>
+      </div>
+      <span class="waterfall-val" style="color:${isUp?'var(--red)':'var(--teal)'}">${isUp?'+':''}${ct.shap.toFixed(2)}</span>
+    </div>`;
+  }).join("");
+
+  shapStage.innerHTML = `
+    <h3>${esc(c.provider_type)} claim &middot; ${esc(c.provider_emirate)}</h3>
+    <div class="fact-row">
+      <span class="fact">Amount <strong>${fmtMoney(c.amount)}</strong></span>
+      <span class="fact">${esc(c.fob)}</span>
+      <span class="fact">${esc(c.ageband)}</span>
+      <span class="fact">${esc(c.icd_chapter)}</span>
+      <span class="fact">${c.actual_label === 1 ? 'Actually flagged for recovery' : 'Not flagged for recovery'}</span>
+    </div>
+    <div class="prob-hero">
+      <span class="big">${fmtPct(c.predicted_proba)}</span>
+      <span class="sub">predicted recovery risk<br>(base rate for all claims: 0.073%)</span>
+    </div>
+    <h3 style="margin-top:22px;">Top drivers for this specific claim</h3>
+    <p style="font-size:12px;color:var(--ink-mute);margin:-4px 0 16px;">
+      <span style="color:var(--red);">&#9632;</span> pushes risk up &nbsp;&nbsp;
+      <span style="color:var(--teal);">&#9632;</span> pushes risk down &nbsp;&nbsp; (SHAP value, log-odds space)
+    </p>
+    ${rows}
+  `;
+}
+
+// Initialize default selections
+selectBaselineClaim(0);
+renderBeatStage();
+watchStage.innerHTML = `<p style="color:var(--ink-mute);font-size:14px;">&larr; Pick a recorded episode to replay it.</p>`;
+shapStage.innerHTML = `<p style="color:var(--ink-mute);font-size:14px;">&larr; Pick a claim to see why the model scored it that way.</p>`;
+
+})();
+</script>
+</body>
+</html>

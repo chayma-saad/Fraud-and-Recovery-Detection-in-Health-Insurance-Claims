@@ -1,0 +1,8 @@
+{
+  "threshold": 0.5511342883110046,
+  "holdout_prauc": 0.021707219091706698,
+  "holdout_rocauc": 0.8280651708044662,
+  "n_adversarial_examples_added": 282,
+  "frozen_agent_attack_success_rate_vs_v2": 0.6866666666666666,
+  "frozen_agent_mean_kept_fraction_vs_v2": 0.6866666666666666
+}

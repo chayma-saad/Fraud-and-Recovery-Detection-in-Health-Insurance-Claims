@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Recovery Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{color-scheme: light dark;}
+  :root{
+    --ground:#F1F3EF;
+    --surface:#E8EBE5;
+    --ink:#16231D;
+    --ink-soft:#3E4C44;
+    --ink-mute:#66766C;
+    --rule:#D2D9CE;
+    --teal:#1B6E5C;
+    --teal-soft:#D9EAE4;
+    --red:#A32B1F;
+    --red-soft:#F3DFDA;
+    --gold:#93691E;
+    --gold-soft:#EFE2C4;
+    --shadow: 0 1px 0 rgba(22,35,29,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#10160F;
+      --surface:#161D14;
+      --ink:#ECF1E9;
+      --ink-soft:#C3CEC3;
+      --ink-mute:#8CA095;
+      --rule:#2A342A;
+      --teal:#4CB89A;
+      --teal-soft:#17332B;
+      --red:#E2694F;
+      --red-soft:#3A1E19;
+      --gold:#D7AE5C;
+      --gold-soft:#332A16;
+      --shadow: 0 1px 0 rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#10160F;
+    --surface:#161D14;
+    --ink:#ECF1E9;
+    --ink-soft:#C3CEC3;
+    --ink-mute:#8CA095;
+    --rule:#2A342A;
+    --teal:#4CB89A;
+    --teal-soft:#17332B;
+    --red:#E2694F;
+    --red-soft:#3A1E19;
+    --gold:#D7AE5C;
+    --gold-soft:#332A16;
+    --shadow: 0 1px 0 rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.serif{
+    font-family:"Source Serif 4", Georgia, "Times New Roman", serif;
+    text-wrap:balance;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .mono, .stat, .tag, .axis, table{
+    font-family:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  a{color:inherit;}
+  svg text{font-family:"IBM Plex Mono", ui-monospace, monospace; fill:var(--ink-soft);}
+  ::selection{background:var(--gold-soft); color:var(--ink);}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+
+  /* ---------- shell / index rail ---------- */
+  .rail{
+    position:fixed; top:0; left:0; bottom:0; width:88px;
+    display:none; flex-direction:column; justify-content:center; gap:2px;
+    padding:0 0 0 18px; z-index:40;
+  }
+  .rail a{
+    display:flex; flex-direction:column; gap:2px;
+    padding:14px 0; text-decoration:none;
+    border-left:2px solid transparent;
+    padding-left:14px;
+    color:var(--ink-mute);
+    transition:border-color .2s ease, color .2s ease;
+  }
+  .rail a .n{font-size:11px; letter-spacing:.06em;}
+  .rail a .t{font-family:"Source Serif 4",serif; font-size:13px; color:var(--ink-soft);}
+  .rail a.active{border-left-color:var(--teal); color:var(--teal);}
+  .rail a.active .t{color:var(--teal);}
+  @media (min-width: 920px){
+    .rail{display:flex;}
+    .wrap{padding-left:96px;}
+  }
+
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- hero ---------- */
+  .hero{padding:76px 0 56px; border-bottom:1px solid var(--rule);}
+  .eyebrow{
+    font-size:12.5px; letter-spacing:.11em; text-transform:uppercase;
+    color:var(--ink-mute); margin:0 0 18px;
+  }
+  .eyebrow::before{content:"◆ "; color:var(--teal);}
+  .hero h1{font-size:clamp(38px,6vw,58px); margin:0 0 20px; line-height:1.04;}
+  .hero .lede{
+    font-size:18px; color:var(--ink-soft); max-width:56ch; margin:0 0 40px;
+  }
+  .stat-row{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--rule); border:1px solid var(--rule);}
+  .stat-tile{background:var(--ground); padding:20px 20px 18px;}
+  .stat-tile .stat{font-size:clamp(22px,3vw,30px); font-weight:600; color:var(--ink); display:block;}
+  .stat-tile .cap{font-size:12.5px; color:var(--ink-mute); margin-top:6px; line-height:1.4;}
+  @media (max-width:640px){.stat-row{grid-template-columns:1fr;}}
+
+  /* ---------- phase sections ---------- */
+  .phase{padding:72px 0; border-bottom:1px solid var(--rule);}
+  .phase--red{ background:linear-gradient(180deg, var(--red-soft) 0%, var(--ground) 220px); }
+  .phase-head{display:flex; align-items:baseline; gap:16px; margin-bottom:10px;}
+  .phase-num{
+    font-size:13px; color:var(--accent); border:1px solid var(--accent);
+    padding:2px 8px; border-radius:2px; letter-spacing:.04em;
+  }
+  .phase--teal{--accent:var(--teal);}
+  .phase--red{--accent:var(--red);}
+  .phase--gold{--accent:var(--gold);}
+  .exhibit{font-size:11.5px; color:var(--ink-mute); letter-spacing:.05em;}
+  .phase h2{font-size:clamp(26px,4vw,36px); margin:6px 0 18px; max-width:20ch;}
+  .phase .intro{font-size:16px; color:var(--ink-soft); max-width:62ch; margin:0 0 34px;}
+
+  .chart-card{
+    background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+    padding:24px clamp(14px,4vw,28px) 20px; margin:28px 0; overflow-x:auto;
+  }
+  .chart-card h3{font-size:13px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-mute); font-family:"IBM Plex Sans"; font-weight:600; margin:0 0 14px;}
+  .chart-card svg{display:block; width:100%; height:auto; min-width:460px;}
+  .chart-note{font-size:12.5px; color:var(--ink-mute); margin-top:12px; max-width:60ch;}
+
+  blockquote.finding{
+    border-left:3px solid var(--accent); margin:30px 0 0; padding:2px 0 2px 20px;
+    font-family:"Source Serif 4",serif; font-size:19px; font-style:italic;
+    color:var(--ink); max-width:58ch;
+  }
+  blockquote.finding cite{
+    display:block; font-family:"IBM Plex Mono"; font-style:normal; font-size:11.5px;
+    color:var(--ink-mute); margin-top:8px; letter-spacing:.03em;
+  }
+
+  .callout{
+    display:flex; gap:14px; align-items:flex-start; background:var(--gold-soft);
+    border:1px solid var(--rule); border-radius:3px; padding:16px 18px; margin:26px 0;
+  }
+  .callout .mark{color:var(--gold); font-family:"Source Serif 4",serif; font-size:22px; line-height:1;}
+  .callout p{margin:0; font-size:14.5px; color:var(--ink-soft);}
+  .callout strong{color:var(--ink); font-weight:600;}
+
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-top:28px;}
+  @media (max-width:680px){.two-col{grid-template-columns:1fr;}}
+  .col h4{font-family:"IBM Plex Sans"; font-size:13px; text-transform:uppercase; letter-spacing:.06em; margin:0 0 12px;}
+  .col.proven h4{color:var(--teal);}
+  .col.next h4{color:var(--ink-mute);}
+  .col ul{margin:0; padding:0; list-style:none;}
+  .col li{
+    padding:10px 0; border-top:1px solid var(--rule); font-size:14px; color:var(--ink-soft);
+  }
+  .col li:first-child{border-top:none;}
+  .col.proven li::before{content:"✓ "; color:var(--teal); font-family:"IBM Plex Mono";}
+  .col.next li::before{content:"→ "; color:var(--ink-mute); font-family:"IBM Plex Mono";}
+
+  footer{padding:44px 0 80px; font-size:12.5px; color:var(--ink-mute);}
+  footer .files{margin-top:14px; display:flex; flex-wrap:wrap; gap:8px;}
+  footer .tag{
+    border:1px solid var(--rule); padding:4px 9px; border-radius:2px; font-size:11.5px;
+  }
+
+  [data-animate]{opacity:1; transform:none;}
+  @media (prefers-reduced-motion: no-preference){
+    [data-animate]{opacity:0; transform:translateY(10px); transition:opacity .5s ease, transform .5s ease;}
+    [data-animate].in{opacity:1; transform:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="rail" aria-label="Sections">
+  <a href="#data" data-nav="data"><span class="n mono">01</span><span class="t">Data</span></a>
+  <a href="#model" data-nav="model"><span class="n mono">02</span><span class="t">Model</span></a>
+  <a href="#redteam" data-nav="redteam"><span class="n mono">03</span><span class="t">Red&#8209;Team</span></a>
+  <a href="#synthesis" data-nav="synthesis"><span class="n mono">04</span><span class="t">Synthesis</span></a>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">Al Hilal Takaful &middot; Claims Recovery Risk</p>
+    <h1>The Recovery&nbsp;Ledger</h1>
+    <p class="lede">Six raw utilization workbooks become one ledger of 839,209 claims,
+      a model that ranks which ones are likely to be flagged for recovery
+      <em>before</em> they're paid — and finally an AI adversary built to find
+      the holes in that very model, so they can be patched first.</p>
+
+    <div class="stat-row">
+      <div class="stat-tile">
+        <span class="stat">839,209</span>
+        <span class="cap">claims kept, of 1,017,993 raw rows across 4 utilization workbooks</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat">0.506 <span class="mono" style="font-size:15px;color:var(--ink-mute);">PR&#8209;AUC</span></span>
+        <span class="cap">best model &mdash; roughly 315&times; the peer&#8209;group outlier baseline</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat">90.3%&nbsp;&rarr;&nbsp;22.7%</span>
+        <span class="cap">agent's attack success rate, before / after one defender retraining round</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================ -->
+  <section class="phase phase--teal" id="data">
+    <div class="phase-head">
+      <span class="phase-num mono">01</span>
+      <span class="exhibit">EXHIBIT A &middot; DATA PROCESSING</span>
+    </div>
+    <h2 data-animate>From six workbooks to one ledger</h2>
+    <p class="intro" data-animate>Four claims workbooks and five beneficiary
+      workbooks, each with title rows above the real header and a broken
+      beneficiary join key, get reduced to one clean table — then to a
+      severe imbalance no accuracy score can hide.</p>
+
+    <div class="chart-card" data-animate>
+      <h3>Cleaning funnel &middot; rows remaining at each stage</h3>
+      <svg viewBox="0 0 720 210" role="img" aria-label="Funnel chart: 1,017,993 raw claims reduced to 839,209 after removing post-termination and missing-core-field rows">
+        <!-- bar 1: raw -->
+        <text x="0" y="22" font-size="12.5">Combined raw claims</text>
+        <rect x="0" y="30" width="460" height="26" fill="var(--ink-mute)" opacity="0.35"></rect>
+        <text x="468" y="48" font-size="13" font-weight="600" fill="var(--ink)">1,017,993</text>
+
+        <!-- bar 2: after rejected/void + post-termination -->
+        <text x="0" y="92" font-size="12.5">&minus; 0 rejected/void, &minus; 9 post&#8209;termination</text>
+        <rect x="0" y="100" width="459.6" height="26" fill="var(--teal)" opacity="0.45"></rect>
+        <text x="468" y="118" font-size="13" font-weight="600" fill="var(--ink)">1,017,984</text>
+
+        <!-- bar 3: final -->
+        <text x="0" y="162" font-size="12.5">&minus; 178,775 missing a core field &rarr; final dataset</text>
+        <rect x="0" y="170" width="379.7" height="26" fill="var(--teal)"></rect>
+        <text x="388" y="188" font-size="13" font-weight="700" fill="var(--teal)">839,209</text>
+      </svg>
+      <p class="chart-note">Bars are drawn to true scale. The post-termination
+        step is nearly invisible on purpose &mdash; only 9 of over a million
+        rows. The missing-core-field step is where 17.6% of the dataset is
+        genuinely lost, not imputed.</p>
+    </div>
+
+    <div class="chart-card" data-animate>
+      <h3>Recovery vs. everything else &middot; true scale</h3>
+      <svg viewBox="0 0 720 120" role="img" aria-label="Proportion bar showing 614 recoverable claims out of 839,209, drawn to true scale as a near-invisible sliver">
+        <rect x="0" y="42" width="700" height="30" fill="var(--ink-mute)" opacity="0.28"></rect>
+        <rect x="699.5" y="42" width="2.2" height="30" fill="var(--red)"></rect>
+        <line x1="700.6" y1="42" x2="630" y2="18" stroke="var(--red)" stroke-width="1"></line>
+        <text x="626" y="21" font-size="13" fill="var(--red)" font-weight="600" text-anchor="end">614 claims &middot; 0.073%</text>
+        <text x="0" y="90" font-size="12.5" fill="var(--ink-mute)">838,595 claims never flagged for recovery</text>
+        <text x="700" y="90" font-size="12.5" fill="var(--ink-mute)" text-anchor="end">&larr; practically invisible at true scale</text>
+      </svg>
+      <p class="chart-note">1 in every 1,367 claims was later flagged for
+        recovery. A classifier that predicts "never recoverable" for
+        everything scores 99.93% accuracy while catching none of them &mdash;
+        which is why every model here is judged on PR&#8209;AUC and
+        recall at a review threshold, never accuracy.</p>
+    </div>
+
+    <blockquote class="finding" data-animate>
+      Seventeen and a half percent of the raw dataset is discarded outright
+      &mdash; not imputed, not guessed &mdash; because a claim missing its
+      amount, date, status, or diagnosis is not a case a recovery model can
+      learn from.
+      <cite>notebooks/01_data_processing.ipynb &middot; docs/01_data_processing.md</cite>
+    </blockquote>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="phase phase--teal" id="model">
+    <div class="phase-head">
+      <span class="phase-num mono">02</span>
+      <span class="exhibit">EXHIBIT B &middot; RECOVERY&#8209;RISK MODEL</span>
+    </div>
+    <h2 data-animate>Ranking risk, not guessing fraud</h2>
+    <p class="intro" data-animate>Four candidates, one time-based split
+      (train &le;2014, validate 2015, test on the untouched 2016 year) so no
+      model ever learns from claims that hadn't happened yet.</p>
+
+    <div class="chart-card" data-animate>
+      <h3>Model comparison &middot; 2016 test set</h3>
+      <svg viewBox="0 0 720 260" role="img" aria-label="Two bar charts comparing PR-AUC and Recall at top 5 percent across four models: peer score, logistic regression, LightGBM, and XGBoost">
+        <!-- shared row labels -->
+        <g font-size="12.5">
+          <text x="0" y="34">Peer Score</text>
+          <text x="0" y="82">Logistic</text>
+          <text x="0" y="130">LightGBM</text>
+          <text x="0" y="178">XGBoost</text>
+        </g>
+
+        <!-- LEFT: PR-AUC, domain 0-0.55, axis width 250 starting x=120 -->
+        <text x="120" y="10" font-size="11.5" fill="var(--ink-mute)">PR&#8209;AUC</text>
+        <line x1="120" y1="20" x2="120" y2="196" stroke="var(--rule)"></line>
+        <g stroke="var(--rule)">
+          <line x1="120" y1="196" x2="370" y2="196"></line>
+        </g>
+        <g font-size="10.5" fill="var(--ink-mute)">
+          <text x="120" y="210">0</text>
+          <text x="233.6" y="210" text-anchor="middle">.25</text>
+          <text x="347.3" y="210" text-anchor="end">.50</text>
+        </g>
+        <rect x="120" y="22" width="0.7" height="18" fill="var(--ink-mute)"></rect>
+        <rect x="120" y="70" width="213.6" height="18" fill="var(--teal)" opacity="0.55"></rect>
+        <rect x="120" y="118" width="228.2" height="18" fill="var(--teal)" opacity="0.8"></rect>
+        <rect x="120" y="166" width="230.0" height="18" fill="var(--teal)"></rect>
+        <g font-size="12" font-weight="600" fill="var(--ink)">
+          <text x="349" y="35">0.002</text>
+          <text x="342" y="83">0.470</text>
+          <text x="357" y="131">0.502</text>
+          <text x="359" y="179">0.506</text>
+        </g>
+
+        <!-- RIGHT: Recall@5%, domain 0-100, axis width 260 starting x=430 -->
+        <text x="430" y="10" font-size="11.5" fill="var(--ink-mute)">Recall @ top 5%</text>
+        <line x1="430" y1="20" x2="430" y2="196" stroke="var(--rule)"></line>
+        <line x1="430" y1="196" x2="690" y2="196" stroke="var(--rule)"></line>
+        <g font-size="10.5" fill="var(--ink-mute)">
+          <text x="430" y="210">0</text>
+          <text x="560" y="210" text-anchor="middle">50%</text>
+          <text x="686" y="210" text-anchor="end">100%</text>
+        </g>
+        <rect x="430" y="22" width="18.5" height="18" fill="var(--gold)" opacity="0.45"></rect>
+        <rect x="430" y="70" width="185.6" height="18" fill="var(--gold)"></rect>
+        <rect x="430" y="118" width="139.4" height="18" fill="var(--gold)" opacity="0.7"></rect>
+        <rect x="430" y="166" width="157.8" height="18" fill="var(--gold)" opacity="0.85"></rect>
+        <g font-size="12" font-weight="600" fill="var(--ink)">
+          <text x="453" y="35">7.1%</text>
+          <text x="620" y="83">71.4%</text>
+          <text x="574" y="131">53.6%</text>
+          <text x="592" y="179">60.7%</text>
+        </g>
+      </svg>
+      <p class="chart-note">XGBoost wins on PR&#8209;AUC (ranking quality across
+        every threshold); logistic regression wins on Recall@5% (71.4%) &mdash;
+        the actual audit-queue operating point. Neither wins outright, and the
+        thesis reports both rather than flattening it into one number.</p>
+    </div>
+
+    <div class="callout" data-animate>
+      <span class="mark">&sect;</span>
+      <p><strong>The business number:</strong> reviewing just the riskiest 5%
+        of 2016's claims (2,494 of 49,876) would have caught 15 of 28 real
+        recoveries &mdash; <strong>AED 10,803 of AED 20,186</strong> in
+        claimed-amount exposure on those claims (53.5%).</p>
+    </div>
+
+    <blockquote class="finding" data-animate>
+      The single strongest feature isn't the peer-deviation score the model
+      was built around &mdash; it's whether the provider is in Abu Dhabi.
+      Non-Abu-Dhabi providers show a 2&ndash;17&times; higher recovery rate,
+      every year, including the untouched 2016 test year.
+      <cite>notebooks/02_modeling.ipynb &middot; docs/02_modeling.md</cite>
+    </blockquote>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="phase phase--red" id="redteam">
+    <div class="phase-head">
+      <span class="phase-num mono" style="color:var(--red); border-color:var(--red);">03</span>
+      <span class="exhibit">EXHIBIT C &middot; ADVERSARIAL RED&#8209;TEAM</span>
+    </div>
+    <h2 data-animate>Teaching an AI to cheat, so we can stop it</h2>
+    <p class="intro" data-animate>A PPO agent is dropped into a closed,
+      synthetic claims simulator (CTGAN-generated &mdash; no real patient
+      data enters the sandbox) with one goal: extract as much of a fraud
+      budget as possible without a static XGBoost defender flagging it.</p>
+
+    <div class="chart-card" data-animate>
+      <h3>Attack success rate &middot; same agent, before / after one retraining round</h3>
+      <svg viewBox="0 0 480 260" role="img" aria-label="Bar chart showing attack success rate dropping from 90.3 percent against the first defender to 22.7 percent against the retrained defender, with a dashed reference line at the 86 percent random-policy baseline">
+        <line x1="40" y1="20" x2="40" y2="220" stroke="var(--rule)"></line>
+        <line x1="40" y1="220" x2="440" y2="220" stroke="var(--rule)"></line>
+        <g font-size="10.5" fill="var(--ink-mute)">
+          <text x="34" y="24" text-anchor="end">100%</text>
+          <text x="34" y="74" text-anchor="end">75</text>
+          <text x="34" y="124" text-anchor="end">50</text>
+          <text x="34" y="174" text-anchor="end">25</text>
+          <text x="34" y="223" text-anchor="end">0</text>
+        </g>
+        <!-- random baseline reference: y(86%) = 220 - 2*86 = 48 -->
+        <line x1="40" y1="48" x2="440" y2="48" stroke="var(--ink-mute)" stroke-width="1" stroke-dasharray="4 4"></line>
+        <text x="440" y="44" font-size="11" fill="var(--ink-mute)" text-anchor="end">random policy baseline &middot; 86.0%</text>
+
+        <!-- bars: y(v) = 220 - 2v, height = 2v -->
+        <rect x="120" y="39.4" width="90" height="180.6" fill="var(--red)"></rect>
+        <text x="165" y="33" font-size="13" font-weight="700" fill="var(--red)" text-anchor="middle">90.3%</text>
+        <text x="165" y="240" font-size="12" text-anchor="middle">Round 1</text>
+        <text x="165" y="254" font-size="11" fill="var(--ink-mute)" text-anchor="middle">vs. defender_v1</text>
+
+        <rect x="290" y="174.6" width="90" height="45.4" fill="var(--ink-mute)"></rect>
+        <text x="335" y="168" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">22.7%</text>
+        <text x="335" y="240" font-size="12" text-anchor="middle">Round 2</text>
+        <text x="335" y="254" font-size="11" fill="var(--ink-mute)" text-anchor="middle">vs. defender_v2</text>
+      </svg>
+      <p class="chart-note">337 evasive claims the agent discovered were
+        folded into the defender's training data. The agent itself was never
+        retrained &mdash; this is the same frozen policy, scored against a
+        defender that has now seen its tricks.</p>
+    </div>
+
+    <div class="chart-card" data-animate>
+      <h3>How the agent spent its fraud budget &middot; 271 successful episodes</h3>
+      <svg viewBox="0 0 720 90" role="img" aria-label="Proportion bar showing 90 percent of successful episodes used a single full-budget claim, and 10 percent split the budget across two to five smaller claims">
+        <rect x="0" y="18" width="630" height="30" fill="var(--red)"></rect>
+        <rect x="630" y="18" width="70" height="30" fill="var(--red)" opacity="0.35"></rect>
+        <text x="16" y="38" font-size="13" fill="var(--red-soft)" font-weight="700">90.0% &middot; single full-budget claim</text>
+        <text x="700" y="66" font-size="12" fill="var(--ink-mute)" text-anchor="end">10.0% split into 2&ndash;5 claims</text>
+      </svg>
+      <p class="chart-note">Of the splitting minority: 10 episodes used 2
+        claims, 5 used 3, 2 used 4, and 10 used the full 5-claim maximum.
+        Splitting is a fallback, not the primary strategy &mdash; brute-force
+        amount inflation already works against a defender with no
+        peer-group context.</p>
+    </div>
+
+    <blockquote class="finding" data-animate style="border-color:var(--red);">
+      A random policy already wins 86% of the time. The real finding isn't
+      that an AI learned to cheat &mdash; it's how little defense there was
+      to begin with, and how cheaply one retraining round closed the gap.
+      <cite>notebooks/03_adversarial_selfplay.ipynb &middot; docs/03_adversarial_selfplay.md</cite>
+    </blockquote>
+  </section>
+
+  <!-- ============================================================ -->
+  <section class="phase" id="synthesis">
+    <div class="phase-head">
+      <span class="phase-num mono" style="color:var(--ink-mute); border-color:var(--rule);">04</span>
+      <span class="exhibit">SYNTHESIS</span>
+    </div>
+    <h2 data-animate>What's proven, what's next</h2>
+    <p class="intro" data-animate>This is a scoped MVP at every phase &mdash;
+      deliberately, and documented as such rather than presented as more
+      finished than it is.</p>
+
+    <div class="two-col" data-animate>
+      <div class="col proven">
+        <h4>Proven</h4>
+        <ul>
+          <li>Time-based split beats every baseline without leaking the future</li>
+          <li>XGBoost / LightGBM both clear PR&#8209;AUC 0.50 vs. a 0.002 peer-score floor</li>
+          <li>A weak defender's amount-inflation blind spot is real and quantifiable</li>
+          <li>One retraining round on 337 examples cuts attack success by 75%</li>
+        </ul>
+      </div>
+      <div class="col next">
+        <h4>Explicitly out of scope</h4>
+        <ul>
+          <li>Full multi-round co-evolution loop (this MVP ran one round)</li>
+          <li>PettingZoo two-sided multi-agent environment</li>
+          <li>LLM tool-calling fraudster agent</li>
+          <li>Peer-deviation-aware defender inside the RL simulator</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Al Hilal Takaful claims data, 2013&ndash;2016 &middot; all figures on
+      this page are pulled directly from the executed project notebooks and
+      their accompanying documentation, not re-estimated for display.</p>
+    <div class="files">
+      <span class="tag">01_data_processing.ipynb</span>
+      <span class="tag">02_modeling.ipynb</span>
+      <span class="tag">03_adversarial_selfplay.ipynb</span>
+      <span class="tag">docs/01&ndash;03</span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var sections = ["data","model","redteam","synthesis"];
+  var links = {};
+  sections.forEach(function(id){
+    links[id] = document.querySelector('[data-nav="'+id+'"]');
+  });
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      var id = entry.target.id;
+      if(entry.isIntersecting && links[id]){
+        Object.keys(links).forEach(function(k){ links[k].classList.remove("active"); });
+        links[id].classList.add("active");
+      }
+    });
+  }, {rootMargin: "-40% 0px -50% 0px"});
+  sections.forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) observer.observe(el);
+  });
+
+  var animated = document.querySelectorAll("[data-animate]");
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add("in");
+        io.unobserve(entry.target);
+      }
+    });
+  }, {threshold:0.15});
+  animated.forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>

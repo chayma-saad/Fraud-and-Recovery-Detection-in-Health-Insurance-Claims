@@ -1,0 +1,7 @@
+{
+  "random_policy_attack_success_rate": 0.9333333333333333,
+  "random_policy_mean_kept_fraction": 0.9117148425030706,
+  "trained_policy_attack_success_rate": 0.94,
+  "trained_policy_mean_kept_fraction": 0.94,
+  "total_timesteps": 200000
+}

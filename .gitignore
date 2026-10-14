@@ -1,0 +1,16 @@
+# Data (large and potentially sensitive)
+data/
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# OS
+Thumbs.db
+.DS_Store

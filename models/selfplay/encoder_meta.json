@@ -1,0 +1,118 @@
+{
+  "categorical_levels": {
+    "GENDER": [
+      "Female",
+      "Male"
+    ],
+    "MARITAL STATUS": [
+      "Married",
+      "Single"
+    ],
+    "AGEBAND": [
+      "Age 0-17",
+      "Age 18-25",
+      "Age 26-35",
+      "Age 36-45",
+      "Age 46-55",
+      "Age 56-60",
+      "Age 61-65",
+      "Age 66-70",
+      "Age 71-75",
+      "Over 75"
+    ],
+    "DEPENDENCY": [
+      "Child",
+      "Others",
+      "Principal",
+      "Spouse"
+    ],
+    "NETWORK TYPE": [
+      "Comprehensive Network",
+      "General Network",
+      "Restricted Network",
+      "Super-Restricted Network",
+      "Workers Network"
+    ],
+    "FOB": [
+      "Dental",
+      "In-Patient",
+      "Maternity",
+      "Optical",
+      "Out-Patient",
+      "Psychiatry",
+      "Wellness"
+    ],
+    "CHRONIC": [
+      "No",
+      "Yes"
+    ],
+    "PREEXISTING": [
+      "No",
+      "Yes"
+    ],
+    "CLAIMTYPE": [
+      "Network",
+      "Reimbursement"
+    ],
+    "PROVIDER EMIRATE": [
+      "Abu Dhabi",
+      "Ajman",
+      "Dubai",
+      "Fujairah",
+      "Ras Al Khaimah",
+      "Sharjah",
+      "Um Al Quwain",
+      "Unknown"
+    ],
+    "PROVIDERTYPE": [
+      "Hospital",
+      "International Provider",
+      "Pharmacy",
+      "Polyclinic/Diagnostic Center"
+    ],
+    "ICD CHAPTER": [
+      "Certain conditions originating in the perinatal period (ICD9CM 760-779,ICD10CM P00-P96)",
+      "Certain infectious and parasitic diseases (ICD9CM 001-139,ICD10CM A00-B99)",
+      "Congenital malformations, deformations and chromosomal abnormalities (ICD9CM 740-759,ICD10CM Q00-Q99)",
+      "Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism (ICD9CM 280-289,ICD10CM D50-D89)",
+      "Diseases of the circulatory system (ICD9CM 390-459,ICD10CM I00-I99)",
+      "Diseases of the digestive system (ICD9CM 520-579,ICD10CM K00-K95)",
+      "Diseases of the genitourinary system (ICD9CM 580-629,ICD10CM N00-N99)",
+      "Diseases of the musculoskeletal system and connective tissue (ICD9CM 710-739,ICD10CM M00-M99)",
+      "Diseases of the nervous system and Sense organs (ICD9CM 320-389,ICD10CM G00-H95)",
+      "Diseases of the respiratory system (ICD9CM 460-519,ICD10CM J00-J99)",
+      "Diseases of the skin and subcutaneous tissue (ICD9CM 680-709,ICD10CM L00-L99)",
+      "Endocrine, nutritional and metabolic diseases (ICD9CM 240-279,ICD10CM E00-E89)",
+      "External causes of morbidity (ICD9CM E000-E999,ICD10CM V00-Y99)",
+      "Factors influencing health status and contact with health services (ICD9 CM V01-V91,ICD10CM Z00-Z99)",
+      "Injury, poisoning and certain other consequences of external causes (ICD9CM 800-999,ICD10CM S00-T88)",
+      "Mental, Behavioral and Neurodevelopmental disorders (ICD9CM 290-319,ICD10CM F01-F99)",
+      "Neoplasms (ICD9CM 140-239,ICD10CM C00-D49)",
+      "Pregnancy, childbirth and the puerperium (ICD9CM 630-679,ICD10CM O00-O9A)",
+      "Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified (ICD9CM 780-799,ICD10CM R00-R99)",
+      "Unspecified Interim Assessment at Initial Status / To be specified upon Processing"
+    ]
+  },
+  "continuous_scale": {
+    "AGE": {
+      "mean": 31.236478171501552,
+      "std": 16.214433519786137
+    },
+    "TOTALAMOUNTCLAIMED": {
+      "mean": 421.5565656118831,
+      "std": 1993.8040351086117
+    },
+    "NETPREMIUM": {
+      "mean": 3542.3740748082564,
+      "std": 2658.77634119002
+    },
+    "GROSSPREMIUM": {
+      "mean": 3968.8245339284645,
+      "std": 3020.4616439947176
+    },
+    "CLAIM_AMOUNT_LOG": {
+      "mean": 5.217546490497712,
+      "std": 1.2218027910592373
+    }
+  }
+}

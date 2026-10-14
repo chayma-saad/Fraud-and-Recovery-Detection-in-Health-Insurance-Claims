@@ -1,0 +1,3003 @@
+\documentclass[11pt,a4paper,openany]{report}
+
+% ---------- Packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\IfFileExists{lmodern.sty}{\usepackage{lmodern}}{}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{xltabular}
+\usepackage{needspace}
+\usepackage[nobottomtitles*]{titlesec}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{adjustbox}
+\usepackage{float}
+\usepackage[table,dvipsnames]{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,trees,shapes.geometric,fit,backgrounds}
+\usepackage[most]{tcolorbox}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+\setstretch{1.2}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+\setlength{\headheight}{14pt}
+\setcounter{tocdepth}{2}
+% Allow line breaks after underscores (long column names in tables)
+\renewcommand{\_}{\textunderscore\allowbreak{}}
+\emergencystretch=3em
+
+\setcounter{secnumdepth}{3}
+
+% ---- table style
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.3}
+\setlength{\LTpre}{6pt}\setlength{\LTpost}{6pt}
+
+% ---- chapter / section headings
+\renewcommand{\bottomtitlespace}{0.14\textheight}
+\titleformat{\chapter}[display]{\bfseries\raggedright\hyphenpenalty=10000\color{blue!40!black}}{\Large\chaptertitlename\ \thechapter}{4pt}{\Huge}[\vspace{3pt}{\color{blue!40!black}\titlerule[1.2pt]}]
+\titlespacing*{\chapter}{0pt}{-15pt}{18pt}
+\titleformat{\section}{\Large\bfseries\color{blue!35!black}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{blue!30!black}}{\thesubsection}{0.6em}{}
+
+% ---- chapter overview and summary boxes
+\newtcolorbox{chapteroverview}{colback=blue!5, colframe=blue!50!black, fonttitle=\bfseries\small,
+  title={Chapter overview}, breakable, left=6pt, right=6pt, top=4pt, bottom=4pt}
+\newtcolorbox{chaptersummary}{colback=gray!8, colframe=gray!60!black, fonttitle=\bfseries\small,
+  title={Chapter summary: key takeaways}, left=6pt, right=6pt, top=4pt, bottom=4pt}
+
+% ---- CBL progress bar and part opener page
+\newcommand{\cblbar}[1]{\begin{center}\begin{tikzpicture}[
+  ph/.style={rectangle,rounded corners,draw,minimum width=3.7cm,minimum height=0.95cm,font=\bfseries\sffamily},
+  arr/.style={-{Stealth},thick}]
+  \ifnum#1=1 \def\ca{engage}\else\def\ca{engage!25}\fi
+  \ifnum#1=2 \def\cb{investigate}\else\def\cb{investigate!25}\fi
+  \ifnum#1=3 \def\cc{act}\else\def\cc{act!25}\fi
+  \node[ph,fill=\ca] (a) {Engage};
+  \node[ph,fill=\cb,right=0.8cm of a] (b) {Investigate};
+  \node[ph,fill=\cc,right=0.8cm of b] (c) {Act};
+  \draw[arr] (a)--(b); \draw[arr] (b)--(c);
+\end{tikzpicture}\end{center}}
+
+\newcommand{\partopener}[5]{% name, colour, phase number, tagline, body
+  \clearpage
+  \refstepcounter{part}\phantomsection
+  \addcontentsline{toc}{part}{Part \thepart: #1}
+  \thispagestyle{plain}
+  \vspace*{0.5cm}
+  \begin{tcolorbox}[enhanced, colback=#2!45, colframe=#2!30!black, boxrule=1.2pt, arc=5pt, left=14pt, right=14pt, top=14pt, bottom=14pt]
+    {\sffamily\large PART \thepart}\\[4pt]
+    {\sffamily\fontsize{34}{38}\selectfont\bfseries #1}\\[6pt]
+    {\large\itshape #4}
+  \end{tcolorbox}
+  \cblbar{#3}
+  \vspace{0.3cm}
+  {\sloppy #5}
+  \clearpage
+}
+
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+\fancyfoot[C]{\thepage}
+\fancyfoot[R]{\scriptsize Adversarial Self-Play for Claims Fraud Detection}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\definecolor{codebg}{rgb}{0.96,0.96,0.96}
+\definecolor{engage}{RGB}{255,236,214}
+\definecolor{investigate}{RGB}{219,234,254}
+\definecolor{act}{RGB}{220,245,224}
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  language=Python,
+  showstringspaces=false,
+  keywordstyle=\color{blue!60!black},
+  commentstyle=\color{green!40!black},
+  columns=fullflexible,
+  xleftmargin=0.3em
+}
+
+\newcommand{\todo}[1]{}
+
+% "In plain words" box (analogy / simple explanation)
+\newtcolorbox{plainwords}[1][In plain words]{
+  colback=yellow!8, colframe=orange!70!black, fonttitle=\bfseries\small,
+  title={#1}, breakable, left=6pt, right=6pt, top=4pt, bottom=4pt
+}
+% Key-result box
+\newtcolorbox{keyresult}[1][Key result]{
+  colback=green!6, colframe=green!40!black, fonttitle=\bfseries\small,
+  title={#1}, breakable, left=6pt, right=6pt, top=4pt, bottom=4pt
+}
+% Caution box
+\newtcolorbox{caution}[1][Caution]{
+  colback=red!5, colframe=red!60!black, fonttitle=\bfseries\small,
+  title={#1}, breakable, left=6pt, right=6pt, top=4pt, bottom=4pt
+}
+
+% Figure helper: \fig{file}{caption}{width fraction}{label}
+\newcommand{\fig}[4]{%
+  \begin{figure}[H]\centering
+  \IfFileExists{#1}{\includegraphics[width=#3\textwidth]{#1}}{%
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{1.2cm}Figure file \texttt{#1} not found\vspace{1.2cm}}}}
+  \caption{#2}\label{#4}
+  \end{figure}}
+
+% =====================================================
+\begin{document}
+\pagenumbering{roman}
+
+% ---------- Title page ----------
+\begin{titlepage}
+\centering
+\vspace*{1.0cm}
+{\large ESPRIT -- \'Ecole Sup\'erieure Priv\'ee d'Ing\'enierie et de Technologie, Tunis}\\[0.4cm]
+{\large Engineering in Artificial Intelligence and Data Science}\\[1.6cm]
+{\Large \textbf{Research Internship Report}}\\[1.0cm]
+{\LARGE \textbf{Adversarial Self-Play Red-Teaming for Fraud and Recovery Detection in Health-Insurance Claims}}\\[0.7cm]
+{\large A Challenge-Based Learning report: Engage, Investigate, Act}\\[1.8cm]
+
+\begin{tabular}{rl}
+\textbf{Author:} & Chaima Saad (\texttt{chayma.saad@esprit.tn})\\[0.2cm]
+\textbf{Research phase in pair with:} & Zayneb Troudi (\texttt{zayneb.troudi@esprit.tn})\\[0.2cm]
+\textbf{Tutor / Supervisor:} & Jihen Hlel\\[0.2cm]
+\textbf{Internship period:} & July -- August 2026\\[0.2cm]
+\textbf{Data:} & Al Hilal Takaful (UAE) claims and beneficiary workbooks\\
+\end{tabular}
+
+\vfill
+\today
+\end{titlepage}
+
+
+% ---------- Declaration ----------
+\chapter*{Declaration of Authorship}
+\addcontentsline{toc}{chapter}{Declaration of Authorship}
+I, Chaima Saad, declare that this report is the result of my own work carried out during the research internship of July--August 2026 under the supervision of Jihen Hlel.
+
+The literature review (reading of the papers, their limitations and the research gaps) was carried out in pair with Zayneb Troudi. The data processing, the adversarial self-play implementation, the experiments and the writing of this report are my individual work. All sources used are cited in the bibliography.
+
+\vspace{1.5cm}
+\begin{tabularx}{\textwidth}{@{}Y Y@{}}
+\textbf{Student} & \textbf{Tutor / Supervisor} \\[0.3cm]
+Chaima Saad & Jihen Hlel \\[1.5cm]
+Date and signature: \rule{5cm}{0.4pt} & Validation and signature: \rule{5cm}{0.4pt} \\
+\end{tabularx}
+
+% ---------- Abstract ----------
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+Health insurers lose part of their spending to fraud, waste and abuse, and in the data studied the confirmed problems are discovered only after payment, through manual review and recovery. This report follows the Challenge-Based Learning (CBL) cycle. In the \emph{Engage} phase it frames the big idea, the essential question and the challenge. In the \emph{Investigate} phase it answers guiding questions grouped in five categories (ethical, legal, technical, data, and cause and consequence) through benchmarking, a literature review carried out jointly with Zayneb Troudi, method papers, the insurer's data and tutor supervision, and closes with a synthesis: the solution objective and a roadmap. In the \emph{Act} phase it documents the individual implementation: a leakage-free data-processing pipeline that turns 1{,}017{,}993 raw claim rows into an ML-ready dataset of 839{,}209 claims with 614 recoveries (0.073\%), and one solution built in depth, an \emph{adversarial self-play red-teaming} framework. In it a PPO fraudster agent, acting on CTGAN synthetic claims, attacks a static XGBoost defender built for self-play, deliberately without peer-group amount features; the evasive claims it discovers are used to retrain the defender, which reduces the attack success rate of the same frozen attacker from 90.3\% to 22.7\%. The report states the limits of this minimum viable product, in particular the weakness of the first defender, the narrow gain of retraining and the weak-label nature of ``not recovered'' claims.
+
+% ---------- Acknowledgements ----------
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+I thank my tutor, Jihen Hlel, for her guidance and feedback throughout the internship. I thank Zayneb Troudi, with whom the literature review was carried out, for the shared reading and discussions. I also thank ESPRIT for the framework of this internship, and Al Hilal Takaful for the claims and beneficiary data that made the experimental work possible.
+
+% ---------- Executive summary ----------
+\chapter*{Executive Summary}
+\addcontentsline{toc}{chapter}{Executive Summary}
+\begingroup\small\setlength{\parskip}{0.3em}
+
+\paragraph{The problem.} At Al Hilal Takaful, improper claims are found \emph{after} they are paid and the insurer then tries to recover the money. Only 614 of 839{,}209 usable claims (0.073\%) ended up in the recovery sheet.
+
+\paragraph{The challenge.} A model trained on past recoveries only knows past fraud. Can an AI \emph{invent} new fraud strategies against our own detector, so the holes are closed first?
+
+\paragraph{What was done.}
+\begin{enumerate}[nosep]
+  \item \textbf{Research (in pair):} review of the key papers, their limitations and the research gaps that motivate the work.
+  \item \textbf{Data processing:} nine Excel workbooks turned into a frozen ML-ready dataset (839{,}209 rows $\times$ 110 columns), with 35 leakage and identifier columns excluded.
+  \item \textbf{Adversarial self-play MVP:} CTGAN synthetic claims, a Gymnasium environment and a PPO fraudster attacking a static \emph{XGBoost defender built for self-play}, then one retraining round.
+\end{enumerate}
+
+{\footnotesize
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}Y r@{}}
+\caption{Headline numbers of the internship}\\
+\toprule
+\rowcolor{blue!14} \textbf{Headline number} & \textbf{Value} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Headline number} & \textbf{Value} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Raw claim rows $\to$ clean rows & 1{,}017{,}993 $\to$ 839{,}209 \\
+Recovered claims (positive class) & 614 (0.073\%) \\
+Holdout PR-AUC of the self-play defender (\texttt{defender\_v1}, 2015--2016) & 0.0339 \\
+Random attacker vs.\ \texttt{defender\_v1}, the self-play XGBoost defender (attack success) & 86.0\% \\
+Trained PPO attacker vs.\ \texttt{defender\_v1} & 90.3\% \\
+Same frozen attacker vs.\ \texttt{defender\_v2} (after retraining on 337 discovered claims) & 22.7\% \\
+\end{xltabular}
+}
+\vspace{0.2em}
+
+\begin{caution}[Which model is attacked?]
+The attacker faces \texttt{defender\_v1}, a compact XGBoost model built for self-play: 81 encoded features and, on purpose, no peer-group amount features (holdout PR-AUC 0.0339). The attack success rates describe this deliberately reduced defender, not a production detector.
+\end{caution}
+
+\noindent\textbf{Main finding.} The detector's weakness, rather than the attacker's sophistication, was most likely the primary problem: a random policy already succeeded 86\% of the time. One retraining round with 337 discovered claims cut the same attacker's success to 22.7\%, closing one specific hole without proving general robustness.
+
+\endgroup
+
+% ---------- Tables of contents ----------
+\begingroup\small\setstretch{1.05}
+\tableofcontents
+\endgroup
+\begingroup\small
+\listoffigures
+\listoftables
+\endgroup
+
+% ---------- Glossary ----------
+\chapter*{Glossary and Abbreviations}
+\addcontentsline{toc}{chapter}{Glossary and Abbreviations}
+{\small
+\rowcolors{2}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}l Y@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Term} & \textbf{Meaning} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Term} & \textbf{Meaning} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+AED & United Arab Emirates dirham, the currency of all claims \\
+CBL & Challenge-Based Learning: Engage, Investigate, Act \\
+CTGAN & Conditional Tabular Generative Adversarial Network, used to create synthetic claims \\
+Defender (self-play) & The XGBoost model attacked by the PPO agent (\texttt{defender\_v1}, then \texttt{defender\_v2} after retraining); built on purpose without peer-group amount features \\
+EDA & Exploratory data analysis \\
+FOB & Field-of-business / claim category of a claim (Out-Patient, In-Patient, Optical, Psychiatry, \dots) \\
+FWA & Fraud, waste and abuse \\
+GAN & Generative adversarial network \\
+GDPR / PDPL & EU General Data Protection Regulation / national personal data protection laws \\
+GQ & Guiding question (CBL Investigate phase) \\
+ICD & International Classification of Diseases (diagnosis codes grouped into chapters) \\
+LOS & Length of stay \\
+MDP & Markov decision process \\
+MVP & Minimum viable product \\
+PPO & Proximal Policy Optimization, the reinforcement-learning algorithm used for the fraudster \\
+PR-AUC & Area under the precision--recall curve \\
+RL & Reinforcement learning \\
+ROC-AUC & Area under the receiver operating characteristic curve \\
+Recall@k\% & Share of all true positives found among the riskiest $k$\% of claims \\
+Recovery / ex-gratia & Amount recovered from, or conceded on, a claim after payment; basis of the target label \\
+Red team & A team (here an AI agent) that attacks a system to expose its weaknesses \\
+Weak label & A label that is incomplete or noisy: here, ``not recovered'' does not prove ``clean'' \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\partopener{ENGAGE}{engage}{1}{Frame the problem: from a real-world theme to a concrete challenge}{\noindent\textbf{What happens in this phase.} The real-world theme is presented, then narrowed from a broad \emph{big idea} into an \emph{essential question} and a concrete \emph{challenge}.\par\medskip
+\noindent\textbf{Essential question.} \emph{How can healthcare insurers make fair and trustworthy reimbursement decisions while distinguishing legitimate care from suspicious behaviour?}\par\medskip
+\noindent\textbf{Challenge.} \emph{Can an AI invent new fraud strategies against our own defences, so that the holes are patched before a real person finds them?}\par\medskip
+\noindent\textbf{Chapter in this part.}
+\begin{itemize}[nosep]
+  \item Chapter~\ref{ch:intro} -- Introduction: the real-world theme, big idea, essential question, challenge and scope
+\end{itemize}\medskip
+\noindent\textbf{Outputs.} The real-world theme; the big idea, essential question and challenge; the scope and who did what.}\label{part:engage}
+
+\chapter{Introduction}\label{ch:intro}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item the real-world theme: claims, reimbursement and the cost of getting it wrong
+  \item the situation at Al Hilal Takaful, where problems are detected after payment
+  \item the Challenge-Based Learning method, the big idea, the essential question and the challenge
+  \item the scope of the work and who did what
+\end{itemize}
+\end{chapteroverview}
+
+
+\section{The real-world theme: claims, reimbursement and the cost of getting it wrong}
+Healthcare insurers process millions of claims every year. Each claim is a request to reimburse a service delivered to a patient by a hospital, clinic, physician or pharmacy. Reimbursement is governed by insurance policies, tariffs and contracts that define what is covered and at what price \cite{dafny2005,ma2002,diwan2026}. Deciding whether to pay a claim, and how much, sounds simple, but in practice it is a hard task for three reasons.
+
+\begin{enumerate}[nosep]
+  \item \textbf{Volume.} The data used in this internship alone contains more than one million raw claim rows from four utilisation workbooks, covering the years 2013 to 2016.
+  \item \textbf{Ambiguity.} Most claims correspond to legitimate care, but some involve fraud, abuse, billing errors, unnecessary services or practices such as upcoding, phantom billing, duplicate claims and unbundling \cite{leder2025,berwick2012,ai2018,ai2022}. From the claim alone, these are often hard to tell apart from unusual but legitimate medicine.
+  \item \textbf{Incentives.} Providers respond to the way they are paid. Dafny \cite{dafny2005} shows that hospitals change their diagnosis coding when reimbursement prices change, without a change in patients' needs. Suspicious patterns therefore have to be read in context, not automatically labelled as fraud.
+\end{enumerate}
+
+Fraud, waste and abuse (FWA) cause unnecessary expenditure, inefficient use of resources and loss of trust between insurers, providers and patients \cite{leder2025,berwick2012}.
+
+\begin{plainwords}
+Think of the insurer as a shop that pays thousands of bills a day. A few bills are inflated or wrong. If the shop only checks \emph{after} paying, it must chase people to get money back. It would be better to spot the suspicious bills \emph{before} paying, and better still to test, in a safe setting, how a clever cheat would try to slip bills through.
+\end{plainwords}
+
+\section{The situation at Al Hilal Takaful: detection after payment}
+In the data provided, problematic claims are identified \emph{reactively}. A claim is paid. Later, a reviewer finds a problem, and the claim is recorded in the \emph{Recovery} sheet together with a recovery or ex-gratia amount. The insurer then tries to recover the money. This process has three drawbacks.
+
+\begin{itemize}[nosep]
+  \item \textbf{The money has already left.} Recovery means claiming back money that has already been paid.
+  \item \textbf{Review capacity is not guided.} Without a risk ranking, reviewers cannot focus on the claims most likely to be problematic.
+  \item \textbf{The evidence is used only retrospectively.} The set of confirmed recoveries is a record of what has already been caught. A model trained on it learns past patterns and says little about strategies nobody has tried yet.
+\end{itemize}
+
+Only 614 of the 839{,}209 usable claims (0.073\%) carry a recovery amount. This extreme rarity shapes every modelling decision in the report (Chapter~\ref{ch:concepts}).
+
+\section{Method: the Challenge-Based Learning cycle}
+The internship was organised with the Challenge-Based Learning (CBL) framework, which moves through three phases.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{2.6cm} Y p{3.2cm}@{}}
+\caption{The three phases of the CBL cycle and where they appear in this report}\\
+\toprule
+\rowcolor{blue!14} \textbf{CBL phase} & \textbf{What happens in the phase} & \textbf{Where in this report} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{CBL phase} & \textbf{What happens in the phase} & \textbf{Where in this report} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+\cellcolor{engage}\textbf{Engage} & The real-world theme and the big idea are narrowed into an essential question and a concrete challenge & Part~\ref{part:engage} (Chapter~\ref{ch:intro}) \\
+\cellcolor{investigate}\textbf{Investigate} & Guiding questions (ethical, legal, technical, data, cause and consequence) are answered through guiding activities, then synthesised into a solution objective and a roadmap & Part~\ref{part:investigate} (Chapters~\ref{ch:gq}--\ref{ch:synthesis}) \\
+\cellcolor{act}\textbf{Act} & A solution is designed, built, evaluated and critically discussed & Part~\ref{part:act} (Chapters~\ref{ch:solution}--\ref{ch:conclusion}) \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Big Idea, Essential Question and Challenge}
+
+\subsection{Big Idea}
+\begin{quote}
+\textbf{Trust in reimbursement decisions.} Fraud, waste and abuse should be stopped before money leaves the insurer, and defences should be tested against fraud that has not happened yet.
+\end{quote}
+
+\subsection{Essential Question}
+\begin{quote}
+\emph{How can healthcare insurers make fair and trustworthy reimbursement decisions while distinguishing legitimate care from suspicious behaviour?}
+\end{quote}
+
+\subsection{Challenge}
+\begin{quote}
+\emph{A model trained on recoveries only learns from fraud that already happened. Can an AI invent new fraud strategies against our own defences, so that the holes are patched before a real person finds them?}
+\end{quote}
+
+The challenge turns a broad question about fairness and trust into something that can be built and measured: an attacker agent, a defender model, and a measurable \emph{attack success rate} before and after the defender is strengthened.
+
+\section{Scope and Attribution}
+\begin{itemize}[nosep]
+  \item The \textbf{literature review} (reading, limitations, research gaps) was carried out \textbf{in pair with Zayneb Troudi}.
+  \item The \textbf{implementation} was carried out \textbf{individually} and is limited to \textbf{one solution: adversarial self-play}. Other solution ideas (temporal and relational models, explainable decision support) were not built and appear only as future work.
+  \item The only detection model in this report is the one under attack: a compact XGBoost defender built for the self-play from the same data and label (Chapter~\ref{ch:selfplay}).
+  \item The implementation uses the \textbf{Al Hilal Takaful (UAE)} data. The Jordan sample is outside the scope of this report.
+  \item Internship period: \textbf{July--August 2026}.
+\end{itemize}
+
+\section{Contributions of the Internship}
+\begin{enumerate}[nosep]
+  \item A literature review of the key papers with their limitations and the research gaps that motivate the work (with Z.\ Troudi).
+  \item A reproducible, leakage-aware data pipeline from nine raw Excel workbooks to a frozen ML-ready dataset, with every cleaning decision counted and documented.
+  \item A compact XGBoost defender that can be re-scored at every step of an attack, evaluated with imbalance-aware metrics on a temporal split.
+  \item An end-to-end adversarial self-play MVP: synthetic data, a custom RL environment, a PPO attacker, adversarial retraining and a business-framed red-team report.
+  \item An honest account of what the MVP does and does not show.
+\end{enumerate}
+
+\section{Organisation of the Report}
+\begin{description}[leftmargin=1.2cm,style=sameline]
+  \item[Part I] \textbf{Engage} -- the real-world theme, big idea, essential question, challenge and scope (this chapter).
+  \item[Part II] \textbf{Investigate} -- guiding questions (\ref{ch:gq}), guiding activities (\ref{ch:activities}), ethical and legal considerations (\ref{ch:reg}), technical foundations (\ref{ch:concepts}), the data (\ref{ch:datainv}), cause and consequence (\ref{ch:cause}), and the synthesis: solution objective and roadmap (\ref{ch:synthesis}).
+  \item[Part III] \textbf{Act} -- solution concept and architecture (\ref{ch:solution}), data processing (\ref{ch:dataprep}), adversarial self-play (\ref{ch:selfplay}), results and discussion (\ref{ch:results}), limitations (\ref{ch:limits}), future work (\ref{ch:future}), reflection and conclusion (\ref{ch:conclusion}).
+\end{description}
+
+% =====================================================
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item Improper claims are found after payment, so money has to be chased back.
+  \item Only 0.073\% of the usable claims were recovered, which shapes every decision.
+  \item The challenge: can an AI invent new fraud strategies against our own defences?
+  \item The research phase was done in pair; the implementation is individual and limited to adversarial self-play.
+\end{itemize}
+\end{chaptersummary}
+
+\partopener{INVESTIGATE}{investigate}{2}{Learn what is known: questions, activities and synthesis}{\noindent\textbf{What happens in this phase.} The essential question is broken into \emph{guiding questions} in five categories: ethical, legal, technical (tools and budget), type of data, and cause and consequence. They are answered through \emph{guiding activities} (benchmarking, literature review, papers, organisations, professors). The phase ends with a \emph{synthesis}: the solution objective and the roadmap.\par\medskip
+\noindent\textbf{Who did what.} The literature review (Section~\ref{sec:litreview}) was carried out \textbf{in pair with Zayneb Troudi}. The other chapters of this part are individual work.\par\medskip
+\noindent\textbf{Chapters in this part.}
+\begin{itemize}[nosep]
+  \item Chapter~\ref{ch:gq} -- Guiding Questions
+  \item Chapter~\ref{ch:activities} -- Guiding Activities
+  \item Chapter~\ref{ch:reg} -- Ethical and Legal Considerations
+  \item Chapter~\ref{ch:concepts} -- Technical Foundations: Concepts, Tools and Budget
+  \item Chapter~\ref{ch:datainv} -- Investigating the Data
+  \item Chapter~\ref{ch:cause} -- Cause and Consequence of Fraud, Waste and Abuse
+  \item Chapter~\ref{ch:synthesis} -- Synthesis: Solution Objective and Roadmap
+\end{itemize}\medskip
+\noindent\textbf{Outputs.} Eleven guiding questions and their answers; the key papers with their limitations; the research gaps; the solution objective, objective tree and success criteria; the roadmap.}\label{part:investigate}
+
+\chapter{Guiding Questions}\label{ch:gq}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item how the essential question is broken into guiding questions
+  \item the five categories: ethical, legal, technical (tools and budget), type of data, and cause and consequence
+  \item where each question is answered
+\end{itemize}
+\end{chapteroverview}
+
+The essential question (\emph{how can healthcare insurers make fair and trustworthy reimbursement decisions while distinguishing legitimate care from suspicious behaviour?}) is too broad to answer directly. In CBL, the Investigate phase breaks it into \emph{guiding questions}, answers them through \emph{guiding activities} (Chapter~\ref{ch:activities}) and ends with a \emph{synthesis}: the solution objective and the roadmap (Chapter~\ref{ch:synthesis}).
+
+\begin{figure}[H]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tikzpicture}[
+  q/.style={rectangle,draw,rounded corners,fill=blue!8,minimum height=1.3cm,text width=2.5cm,align=center,font=\scriptsize},
+  top/.style={rectangle,draw,rounded corners,fill=orange!15,minimum height=1.0cm,text width=9cm,align=center,font=\small},
+  stp/.style={rectangle,draw,rounded corners,fill=green!10,minimum height=1.0cm,text width=9cm,align=center,font=\small},
+  arr/.style={-{Stealth},thick}
+]
+\node[q] (c3) {\textbf{Technical}\\tools and budget};
+\node[q,left=0.4cm of c3] (c2) {\textbf{Legal}\\data-protection law};
+\node[q,left=0.4cm of c2] (c1) {\textbf{Ethical}\\fairness, bias, dual use};
+\node[q,right=0.4cm of c3] (c4) {\textbf{Type of data}\\sources, labels, quality};
+\node[q,right=0.4cm of c4] (c5) {\textbf{Cause and consequence}\\why FWA occurs, what it costs};
+\node[top,above=1.1cm of c3] (e) {Essential question};
+\node[stp,below=1.1cm of c3] (a) {Guiding activities: benchmarking, literature review, papers, organisations, professors};
+\node[stp,below=0.8cm of a,fill=violet!10] (s) {Synthesis: solution objective and roadmap};
+\foreach \c in {c1,c2,c3,c4,c5} {\draw[arr] (e.south) -- (\c.north); \draw[arr] (\c.south) -- (a.north);}
+\draw[arr] (a)--(s);
+\end{tikzpicture}
+\end{adjustbox}
+\caption{The Investigate phase: from the essential question to the synthesis.}\label{fig:investigate}
+\end{figure}
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{2.5cm} l Y Y@{}}
+\caption{Guiding questions by category, short answers and where they are answered}\\
+\toprule
+\rowcolor{blue!14} \textbf{Category} & \textbf{\#} & \textbf{Guiding question} & \textbf{Short answer and where} \\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Category} & \textbf{\#} & \textbf{Guiding question} & \textbf{Short answer and where} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Cause and consequence & GQ1 & What are fraud, waste and abuse, and what causes them? & Incentives, imperfect reimbursement and weak monitoring \cite{leder2025,berwick2012} (Chapter~\ref{ch:cause}). \\
+ & GQ2 & Why can suspicious billing be legitimate? & Providers respond to payment rules \cite{dafny2005,ma2002,diwan2026}, so alerts need context (Chapter~\ref{ch:cause}). \\
+ & GQ3 & Which schemes exist and what do they cost? & Upcoding, phantom billing, duplicates, unbundling, collusion, identity misuse \cite{ai2018}; cost and lost trust (Chapter~\ref{ch:cause}). \\
+Ethical & GQ4 & What ethical risks do detection systems create? & Unfair provider rankings, bias inherited from weak labels, dual use; keep a human in the loop (Chapter~\ref{ch:reg}). \\
+Legal & GQ5 & Which laws govern health-claim data, and what do they imply? & GDPR and the UAE, Jordan and Saudi data-protection laws \cite{gdpr,uaepdpl,jordanpdpl,saudipdpl}; privacy by design (Chapter~\ref{ch:reg}). \\
+Technical (tools and budget) & GQ6 & Which detection methods exist, how do they compare, and how are rare labels evaluated? & Supervised, unsupervised and hybrid ML \cite{dupreez2025}; results hard to compare \cite{ai2022}; PR-AUC and recall@k \cite{saito2015} (Chapters~\ref{ch:activities}, \ref{ch:concepts}). \\
+ & GQ7 & Do detectors keep working when fraudsters adapt? & Detectors trained on history miss new strategies; adversarial testing is open \cite{lunghi2025,pang2025,beling2021}; tested in Chapter~\ref{ch:results}. \\
+ & GQ8 & Which tools and what budget does the solution need? & Open-source Python stack, CPU only, two months (Chapter~\ref{ch:concepts}). \\
+Type of data & GQ9 & What data exist, and what do they allow? & Nine Excel workbooks; 0.073\% positives; messy exports (Chapter~\ref{ch:datainv}). \\
+ & GQ10 & Can attacks be explored without exposing patient data? & Yes: synthetic claims from CTGAN \cite{xu2019ctgan} in a closed environment (Chapter~\ref{ch:selfplay}). \\
+Experimental question & GQ11 & How weak is our own detector against an adaptive attacker? & Answered by the self-play experiment (Chapter~\ref{ch:results}). \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+\begin{plainwords}
+Think of building a bridge. Before drawing it you ask about the rules (legal), who will be affected (ethical), the tools and the budget (technical), the ground you build on (data), and why the river is a problem at all (cause and consequence). Only then do you decide what to build.
+\end{plainwords}
+
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item Eleven guiding questions in five categories: ethical, legal, technical, data, and cause and consequence.
+  \item They are answered by guiding activities (Chapter~\ref{ch:activities}) and by the chapters that follow.
+  \item The phase ends with a synthesis: the solution objective and the roadmap.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Guiding Activities}\label{ch:activities}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item the five guiding activities: benchmarking, literature review, papers, organisations and professors
+  \item the key papers read and the main limitation of each
+\end{itemize}
+\end{chapteroverview}
+
+The guiding questions were answered through five activities. Table~\ref{tab:activities} summarises what was done in each and which questions it served.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.1cm} Y p{2.8cm}@{}}
+\caption{Guiding activities and what they produced}\label{tab:activities}\\
+\toprule
+\rowcolor{blue!14} \textbf{Activity} & \textbf{What was done} & \textbf{Questions served} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Activity} & \textbf{What was done} & \textbf{Questions served} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Benchmarking & Comparison of detection approaches; benchmark of the defender's feature sets on the data; random-policy benchmark for the attacker & GQ6, GQ7, GQ11 \\
+Literature review & Review of twelve key papers on the economics of fraud and on detection (with Z.\ Troudi) & GQ1--GQ3, GQ6 \\
+Papers on methods & Reading of the papers behind the tools used (XGBoost, CTGAN, PPO, Stable-Baselines3, Gymnasium, PR-AUC) & GQ6, GQ8, GQ10 \\
+Organisations & Al Hilal Takaful data and process; actuarial and industry sources & GQ3, GQ9 \\
+Professors & Supervision by the tutor, J.\ Hlel; joint review with Z.\ Troudi & All \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+\section{Benchmarking}
+Benchmarking happened at three levels.
+
+\begin{enumerate}[nosep]
+  \item \textbf{Approaches.} Table~\ref{tab:approaches} compares the families of detection methods found in the literature and the role each plays in this work.
+  \item \textbf{Defender.} Two feature sets were benchmarked for the self-play defender on the 2015--2016 holdout (Chapter~\ref{ch:selfplay}): in a development check, the raw columns alone reached a PR-AUC of 0.0040; the final defender, which adds eight engineered columns, reaches 0.0339. The development check is not part of the final notebook.
+  \item \textbf{Attacker.} A random policy is the benchmark for the learned attacker (Chapter~\ref{ch:results}): it already succeeds 86.0\% of the time against the self-play defender, against 90.3\% for the trained policy.
+\end{enumerate}
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.3cm} Y Y Y@{}}
+\caption{Detection approaches found in the literature}\label{tab:approaches}\\
+\toprule
+\rowcolor{blue!14} \textbf{Approach} & \textbf{Idea} & \textbf{Strength and weakness} & \textbf{Role in this work} \\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Approach} & \textbf{Idea} & \textbf{Strength and weakness} & \textbf{Role in this work} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Supervised learning (for example gradient-boosted trees) & Learn from claims whose outcome is known & Strong on tabular claims, but learns only past, caught fraud \cite{dupreez2025,debener2023} & The self-play defender (XGBoost) \\
+Unsupervised outlier scores & Flag claims far from similar claims, with no labels & Needs no labels, but a high amount is not always suspicious \cite{debener2023} & Peer-deviation features built in the data pipeline (Section~\ref{sec:features}); left out of the defender on purpose \\
+Graph models & Use relations among patients, providers, diagnoses and claims & Capture relations, but static and hard to explain \cite{muhammad2025} & Future direction only \\
+Adversarial testing & Let an attacker search for weaknesses of the detector & Anticipates adaptation, but little regional claim-level evidence \cite{lunghi2025,pang2025,beling2021} & The solution built in this work (Chapter~\ref{ch:selfplay}) \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Literature Review}\label{sec:litreview}
+The literature review was carried out in pair with Zayneb Troudi. This section keeps only what is needed to motivate the implementation; a fuller review is in preparation \cite{saad2026survey}.
+
+Each paper was read with the same questions: what problem it addresses, which data and method it uses, what it finds, what its limitations are and what it means for this project. Table~\ref{tab:papers} gives the result for the twelve key papers.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.2cm} Y Y Y@{}}
+\caption{Key papers: contribution, main limitation and use in this work}\label{tab:papers}\\
+\toprule
+\rowcolor{blue!14} \textbf{Paper} & \textbf{Contribution} & \textbf{Main limitation} & \textbf{Use in this work} \\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Paper} & \textbf{Contribution} & \textbf{Main limitation} & \textbf{Use in this work} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Leder-Luis \& Malani 2025 \cite{leder2025} & Fraud as an economic problem: incentives, imperfect reimbursement and weak monitoring & No claim-level detection; no UAE or Jordan data & Economic framing: read patterns in context \\
+Berwick \& Hackbarth 2012 \cite{berwick2012} & Waste goes beyond fraud (six categories) & Policy synthesis; no computational method & Alerts are not proof of fraud \\
+Dafny 2005 \cite{dafny2005} & Hospitals shift diagnosis coding when prices change & U.S.\ Medicare hospitals only & Context for reading billing patterns \\
+Ma \& Riordan 2002 \cite{ma2002} & Insurance design creates moral hazard & Theoretical; no data & Keep coverage context (network, claim category) as input \\
+Diwan et al.\ 2026 \cite{diwan2026} & Competitive bidding cut prices but raised the share of fraudulent suppliers & Medical-equipment market only; no detection model & Study policy and fraud together \\
+Ai et al.\ 2018 \cite{ai2018} & Taxonomy of fraud schemes & No common benchmark & Taxonomy of schemes for the simulated attacker (Table~\ref{tab:schemes}) \\
+Ai et al.\ 2022 \cite{ai2022} & Systematic review (27 of 450 studies); results hard to compare & Review only; no common benchmark & Document preprocessing, labels, splits and metrics \\
+du Preez et al.\ 2025 \cite{dupreez2025} & 137 studies, mostly supervised and on U.S.\ data; labels are scarce & Little explainability, temporal modelling or UAE evidence & Choice of tree ensembles; evidence gap for the UAE \\
+Debener et al.\ 2023 \cite{debener2023} & XGBoost and Isolation Forest are complementary (7{,}750 motor claims) & Motor insurance, not healthcare & XGBoost as detector; rank-based metrics \\
+Banulescu-Radu \& Kougblenou 2025 \cite{banulescu2025} & Cost-aware evaluation of fraud detection & General insurance, not healthcare-specific & Operational metrics: workload, false positives, recovery \\
+Kumaraswamy 2022 \cite{kumaraswamy2022} & Deep neural networks on Texas Medicaid pharmacy claims (OIG fraud labels, plus interviews with three investigators) capture non-linear fraud patterns better than conventional ML & Limited explainability; high computational cost & Provider-level frequency and amount features; motivates explainable models \\
+Muhammad et al.\ 2025 \cite{muhammad2025} & Graph networks on MENA claims beat tabular baselines & Static graph; unreliable explainers & Closest regional reference; possible temporal extension \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+\subsection{What the papers teach}
+\begin{itemize}[nosep]
+  \item \textbf{Context first.} An unusual bill is a hypothesis, not a verdict: payment rules shape provider behaviour \cite{leder2025,dafny2005,ma2002,diwan2026}.
+  \item \textbf{Fraud is one part of waste.} Detection must be weighed against its operational cost \cite{berwick2012,banulescu2025}.
+  \item \textbf{Evidence is hard to compare.} Data, labels and metrics differ between studies, so everything must be documented \cite{ai2022,dupreez2025}.
+  \item \textbf{Labels are scarce and incomplete.} This calls for imbalance-aware learning and complementary unsupervised signals \cite{debener2023,dupreez2025}.
+  \item \textbf{History does not anticipate adaptation.} Detectors trained on past fraud need adversarial testing \cite{lunghi2025,pang2025,beling2021}.
+\end{itemize}
+
+
+\section{Papers on Methods}
+Besides the literature on fraud, the papers behind each tool were read, so that every method is used as its authors intend.
+
+\begin{itemize}[nosep]
+  \item \textbf{Gradient boosting:} XGBoost \cite{chen2016xgboost}, for the defender.
+  \item \textbf{Synthetic tabular data:} CTGAN \cite{xu2019ctgan}, for the synthetic claims.
+  \item \textbf{Reinforcement learning:} PPO \cite{schulman2017ppo}, Stable-Baselines3 \cite{raffin2021sb3} and Gymnasium \cite{towers2024gymnasium}, for the attacker and its environment.
+  \item \textbf{Evaluation:} the precision--recall plot for imbalanced data \cite{saito2015}, which justifies PR-AUC and recall@k.
+  \item \textbf{Adversarial testing of fraud detectors:} \cite{lunghi2025,pang2025,beling2021}, the starting point of the self-play design.
+\end{itemize}
+
+\section{Organisations}
+\begin{itemize}[nosep]
+  \item \textbf{Al Hilal Takaful} provided the nine claims and beneficiary workbooks. Its process is the starting point of the whole project: problems are found \emph{after} payment, and the Recovery sheet (614 of 839{,}209 usable claims) is the ground truth used for the labels.
+  \item \textbf{Industry and actuarial sources} complete the picture: a Society of Actuaries report on predictive modelling of health-care fraud \cite{ai2018}, the actuarial review of detection methods \cite{ai2022}, and a study of payer-system claims from the MENA region \cite{muhammad2025}.
+\end{itemize}
+
+\section{Professors and Supervision}
+The tutor, Jihen Hlel, supervised the work throughout the internship. The literature review was carried out jointly with Zayneb Troudi, with whom the reading and the discussions were shared.
+
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item Five activities served the guiding questions: benchmarking, literature review, method papers, organisations and professors.
+  \item The twelve key papers agree that an unusual bill is not automatically fraud, and each has a clear limitation for this work.
+  \item The benchmarks show that engineered features lift the defender from a PR-AUC of 0.0040 (development check) to 0.0339, and that a random attacker already beats it.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Ethical and Legal Considerations}\label{ch:reg}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item the ethical risks of fraud detection and of a red-team study (GQ4)
+  \item the legal framework for health data in the EU, UAE, Jordan and Saudi Arabia (GQ5)
+  \item the design decisions that follow from both
+\end{itemize}
+\end{chapteroverview}
+
+\section{Ethical Considerations}
+\begin{itemize}[nosep]
+  \item \textbf{Fairness to providers.} A statistical deviation is not proof of fraud (Chapter~\ref{ch:cause}). Any provider ranking built on these methods must be used with due process, and attention to economically induced behaviour.
+  \item \textbf{Weak labels.} Models learn from past reviews and can reproduce reviewer bias. This is a reason to report limitations explicitly.
+  \item \textbf{Dual use.} Strategies discovered by a red-team agent could in principle inform an attacker. The mitigation is containment: the agent runs on synthetic data in a closed environment and the report documents weaknesses together with suggested patches.
+  \item \textbf{Human in the loop.} Alerts and scores prioritise reviews; they never automate refusal of care or payment.
+\end{itemize}
+\section{Legal Framework}
+Healthcare claims contain highly sensitive personal and clinical information. The collection, storage and processing of such data must respect strict data-protection rules. Four instruments frame the work: the EU General Data Protection Regulation \cite{gdpr}, the UAE Personal Data Protection Law (Federal Decree-Law No.~45 of 2021) \cite{uaepdpl}, the Jordan Personal Data Protection Law No.~24 of 2023 \cite{jordanpdpl} and the Saudi Personal Data Protection Law \cite{saudipdpl}. They share principles of lawfulness, purpose limitation, data minimisation, confidentiality, accountability and transparency.
+
+\section{Design Decisions that Follow}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.3cm} Y@{}}
+\caption{Design decisions that follow from data-protection principles}\\
+\toprule
+\rowcolor{blue!14} \textbf{Principle} & \textbf{Decision in this work} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Principle} & \textbf{Decision in this work} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Data minimisation & Identifier columns (names, card numbers, national identity numbers, policy numbers, claim IDs) are removed from model inputs (21 columns) \\
+Privacy by design & CTGAN is trained on real claims, but everything downstream in the RL sandbox sees \emph{only} synthetic claims; no real patient record reaches the simulator \\
+Transparency & Every cleaning step is counted; excluded rows are exported for audit instead of being silently dropped \\
+Accountability & Scores support human review. The red-team report suggests patches; it does not decide on any claim \\
+Purpose limitation & The attacker lives in a closed simulated environment and optimises a synthetic budget; it is a defensive study, not a tool to commit fraud \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item Privacy by design: the RL sandbox sees only synthetic claims.
+  \item Scores support human review; they never decide a claim.
+  \item Provider rankings need due process because deviation is not proof of fraud.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Technical Foundations: Concepts, Tools and Budget}\label{ch:concepts}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item the tools used and the real budget of the project: time and compute
+  \item the life of a claim and the difference between pre- and post-adjudication information
+  \item metrics for rare events, weak labels, data leakage and temporal validation
+  \item gradient boosting, peer-group deviation, CTGAN, reinforcement learning, PPO and red-teaming
+\end{itemize}
+\end{chapteroverview}
+
+
+This chapter answers the technical guiding questions (GQ6, GQ7 and GQ8): which tools the solution needs, what they cost, and which concepts are needed to read the rest of the report. The concepts are introduced in plain words first, then formally.
+
+\section{Tools and Libraries}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.6cm} Y@{}}
+\caption{Tools and libraries used}\\
+\toprule
+\rowcolor{blue!14} \textbf{Need} & \textbf{Tool} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Need} & \textbf{Tool} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Data handling & Python, pandas, \texttt{openpyxl} (Excel reading) \\
+Defender model & XGBoost \cite{chen2016xgboost}; scikit-learn (scaling, PR-AUC and ROC-AUC) \\
+Synthetic data & CTGAN \cite{xu2019ctgan} (\texttt{ctgan} package) \\
+Reinforcement learning & Gymnasium \cite{towers2024gymnasium}, Stable-Baselines3 \cite{raffin2021sb3}, PPO \cite{schulman2017ppo}, PyTorch (CPU build) \\
+Notebooks and scripts & Jupyter notebooks generated by \texttt{scripts/build\_notebook.py} and \texttt{scripts/build\_selfplay\_notebook.py}; pipeline scripts in \texttt{scripts/selfplay/} \\
+Environment & Python virtual environment \texttt{scripts/venv}; CPU-only PyTorch because the available GPU driver (CUDA 11.2) is old and CPU was simpler and fast enough at this model size \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+
+\section{Budget, Constraints and Risks}
+All the tools listed above are open source, so licences were not a cost driver. The real budget of the project was \emph{time} and \emph{compute}: two months in total, and a CPU-only machine: the available GPU driver (CUDA 11.2) is old, and CPU was simpler and fast enough at this model size. For example, CTGAN trained for 150 epochs in about 21 minutes. The table lists the main constraints and risks and how each was handled.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.6cm} Y Y@{}}
+\caption{Constraints, risks and how they were handled}\\
+\toprule
+\rowcolor{blue!14} \textbf{Constraint / risk} & \textbf{Impact} & \textbf{How it was handled} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Constraint / risk} & \textbf{Impact} & \textbf{How it was handled} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Two months of work & Several solution ideas, too many for the period & Scope reduced to one solution built in depth; an MVP first \\
+Messy raw exports & Header rows, corrupted defined names, incompatible IDs & Dedicated loading functions; name + date-of-birth join key \\
+Extreme imbalance (0.073\%) & Accuracy is meaningless; few positives & PR-AUC, recall@k\%, class weighting, temporal split \\
+Weak labels & ``Not recovered'' is not proof of ``clean'' & Stated as a boundary of every result \\
+Sensitive data & Personal and clinical information & Synthetic claims only inside the RL sandbox \\
+No GPU support & CTGAN training time & CPU build, about 21 minutes for 150 epochs \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+
+\section{The Life of a Claim: Before and After Adjudication}
+A claim goes through stages. What is \emph{known} at each stage determines what a model may use.
+
+\begin{figure}[H]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tikzpicture}[
+  node distance=0.6cm,
+  st/.style={rectangle,draw,rounded corners,minimum height=1.0cm,minimum width=2.4cm,align=center,font=\scriptsize},
+  arr/.style={-{Stealth},thick}
+]
+\node[st,fill=blue!10] (a) {Service\\delivered};
+\node[st,fill=blue!10,right=of a] (b) {Claim\\submitted\\(reception)};
+\node[st,fill=orange!15,right=of b] (c) {Adjudication\\(status set)};
+\node[st,fill=orange!15,right=of c] (d) {Payment /\\settlement};
+\node[st,fill=red!12,right=of d] (e) {Review and\\recovery};
+\draw[arr] (a)--(b); \draw[arr] (b)--(c); \draw[arr] (c)--(d); \draw[arr] (d)--(e);
+\node[draw=blue!60,dashed,fit=(a)(b),inner sep=6pt,label={[font=\scriptsize,text=blue!60!black]above:Known at submission (allowed as inputs)}] {};
+\node[draw=red!60,dashed,fit=(c)(d)(e),inner sep=6pt,label={[font=\scriptsize,text=red!60!black]above:Known only afterwards (leakage if used)}] {};
+\end{tikzpicture}
+\end{adjustbox}
+\caption{What is known when: only information available at submission may be used to score a claim before payment.}\label{fig:lifecycle}
+\end{figure}
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.6cm} Y Y@{}}
+\caption{What is known at each stage of a claim}\\
+\toprule
+\rowcolor{blue!14} \textbf{Stage} & \textbf{Typical fields (in this data)} & \textbf{Usable as model input?} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Stage} & \textbf{Typical fields (in this data)} & \textbf{Usable as model input?} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Service and submission & Patient profile, diagnosis chapter, provider, network, claim category, claimed amount, dates & Yes (pre-adjudication) \\
+Adjudication and settlement & \texttt{STATUS}, \texttt{TOTALPAYABLE}, \texttt{PAYERSHARE}, \texttt{SETTLEDATE}, \texttt{ASSESSMENT} & No (post-adjudication) \\
+Review and recovery & \texttt{RECOVERY/EX-GRATIA}, \texttt{RECOVERYTYPE} & No (this is the answer) \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Fraud, Waste and Abuse Schemes}\label{sec:schemes}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}l Y Y@{}}
+\caption{Fraud schemes and their relation to the simulated attacker.}\label{tab:schemes}\\
+\toprule
+\rowcolor{blue!14} \textbf{Scheme \cite{ai2018}} & \textbf{In plain words} & \textbf{Closest link to the attacker of this report} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Scheme \cite{ai2018}} & \textbf{In plain words} & \textbf{Closest link to the attacker of this report} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Upcoding & Billing a more expensive service than the one delivered & Amount inflation: a larger claimed amount for similar care \\
+Phantom billing & Billing for care never provided & Not simulated \\
+Duplicate claims & The same service billed more than once & Partly: several submissions from the same baseline claim \\
+Unbundling & Splitting one service into separately billed parts & Budget splitting across 2--5 sub-claims \\
+Provider collusion & Coordinated behaviour between providers or patients & Not simulated \\
+Identity misuse & Using another person's identity or coverage & Not simulated \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Imbalanced Classification and Metrics}\label{sec:metrics}
+
+\subsection{The accuracy trap}
+Only 614 of 839{,}209 usable claims are positive. A ``model'' that always answers ``not recovered'' is right for 838{,}595 claims:
+\[
+\text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN} = \frac{838{,}595}{839{,}209} \approx 99.93\%,
+\]
+and it finds \emph{no} recovery. Accuracy is therefore useless here.
+
+\begin{plainwords}
+If only one ticket in a thousand is a winner, a person who says ``no ticket wins'' is right 99.9\% of the time and completely useless. What matters is how many winners are found, and at what cost in tickets checked.
+\end{plainwords}
+
+\subsection{Metrics used}
+With $TP$, $FP$, $FN$ the true positives, false positives and false negatives at a threshold,
+\[
+\text{Precision}=\frac{TP}{TP+FP},\qquad
+\text{Recall}=\frac{TP}{TP+FN}.
+\]
+\begin{itemize}[nosep]
+  \item \textbf{PR-AUC} summarises the precision--recall curve. A random scorer has PR-AUC equal to the positive rate (here below 0.001), so even a PR-AUC of 0.03 is far above chance. For rare positives, PR-AUC is more informative than ROC-AUC \cite{saito2015}.
+  \item \textbf{ROC-AUC} is the probability that a random positive receives a higher score than a random negative. It can look good even when precision is very low, which is why it is reported only as a secondary measure.
+  \item \textbf{Recall@k\%} is the share of all positives that fall in the top $k$\% of claims by score. It corresponds to a reviewer who can only open $k$\% of the claims. The \textbf{lift} is $\text{Recall@}k\%\,/\,(k/100)$. For example, Recall@5\% of 55.5\% means a lift of about $11.1\times$ over random review.
+\end{itemize}
+
+\section{Weak Labels and Label Maturity}
+The label is ``had a recovery''. A claim with no recovery may be legitimate or simply never reviewed, so the negative class is \emph{unlabelled} rather than clean. This is known as a weak-label or positive--unlabelled setting \cite{ai2022,dupreez2025}. Two consequences follow: measured precision is probably a lower bound of the true precision, and models learn what reviewers historically caught, including their habits.
+
+A second effect is \emph{label maturity}: a recent claim may not yet have been reviewed, so its recovery rate looks lower than it will eventually be. This is relevant for the last months of the data (Section~\ref{sec:eda-monthly}).
+
+\section{Data Leakage and Temporal Validation}
+\begin{description}[leftmargin=0.9cm,style=nextline]
+  \item[Target leakage.] Using a column that is only known after the outcome (for example \texttt{RECOVERYTYPE}). The model then reads the answer instead of learning risk. Section~\ref{sec:leakage} lists the 14 such columns excluded.
+  \item[Train--test contamination.] Information from the test period reaching the training pipeline, for example statistics computed on the whole dataset. This report keeps one such simplification and states it (Chapter~\ref{ch:limits}).
+  \item[Temporal split.] Claims are split by year, not randomly: train on earlier years and test on later ones. This imitates deployment, where the model scores future claims.
+\end{description}
+
+\section{Gradient Boosting and XGBoost}
+Gradient boosting builds a prediction as a sum of many small decision trees, each correcting the errors of the previous ones:
+\[
+F_m(x) = F_{m-1}(x) + \eta\, h_m(x),
+\]
+where $h_m$ is the new tree and $\eta$ the learning rate. XGBoost \cite{chen2016xgboost} is an efficient implementation, used here for the defender. It handles mixed numeric and categorical inputs and non-linear interactions, which suits claim data. Class imbalance is handled with a weight on positive examples:
+\[
+\texttt{scale\_pos\_weight}=\frac{N_{\text{negative}}}{N_{\text{positive}}}.
+\]
+
+\begin{plainwords}
+Imagine a team of beginners. The first guesses roughly; the second only studies what the first got wrong; the third studies what is still wrong, and so on. Together they become a strong predictor. Giving rare positives a heavy weight tells the team that missing a recovery is much more costly than a false alarm.
+\end{plainwords}
+
+\section{Peer-Group Deviation}
+A claim is judged against similar claims. For claim $i$ with amount $a_i$ in peer group $g(i)$ (here: ICD chapter $\times$ age band $\times$ service category),
+\[
+\texttt{PEER\_ZSCORE}_i=\frac{a_i-\mu_{g(i)}}{\sigma_{g(i)}},\qquad
+\texttt{AMOUNT\_OVER\_MEDIAN}_i=\frac{a_i}{\operatorname{median}_{g(i)}(a)}.
+\]
+If similar claims usually cost AED 1{,}000 and a claim costs AED 5{,}000, the second score is 5. It is a tariff-free proxy for ``medically justified cost''. These scores are built in the data pipeline (Section~\ref{sec:features}) and, as Chapter~\ref{ch:selfplay} suggests, their absence is the likely main weakness of the first defender (to be tested).
+
+\section{Synthetic Tabular Data: GANs and CTGAN}
+A generative adversarial network (GAN) trains two networks against each other: a generator $G$ that creates fake rows and a discriminator $D$ that tries to tell them from real rows:
+\[
+\min_G \max_D \; \mathbb{E}_{x\sim p_{\text{data}}}[\log D(x)] + \mathbb{E}_{z\sim p_z}[\log(1-D(G(z)))].
+\]
+CTGAN \cite{xu2019ctgan} adapts this to tables with mixed columns. It normalises each continuous column with a mode-specific transformation (suited to skewed amounts), conditions the generator on a discrete column, and uses \emph{training-by-sampling}: rare category values are deliberately oversampled during training so that the generator learns them. A known side effect, observed here, is that unconditioned sampling reproduces this oversampled distribution (Section~\ref{sec:ctgan}).
+
+\section{Reinforcement Learning and PPO}
+Reinforcement learning (RL) models an agent that acts in an environment to maximise a reward. It is formalised as a Markov decision process $(\mathcal{S},\mathcal{A},P,R,\gamma)$: at each step the agent observes a state $s_t$, chooses an action $a_t$ from a policy $\pi_\theta(a\mid s)$, and receives a reward $r_t$. Proximal Policy Optimization (PPO) \cite{schulman2017ppo} improves the policy with a clipped objective that prevents too-large updates:
+\[
+L(\theta)=\mathbb{E}_t\Big[\min\big(\rho_t(\theta)\hat A_t,\ \operatorname{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)\hat A_t\big)\Big],\quad
+\rho_t(\theta)=\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\text{old}}}(a_t\mid s_t)},
+\]
+where $\hat A_t$ is the estimated advantage. The implementation of Stable-Baselines3 \cite{raffin2021sb3} is used with environments written for Gymnasium \cite{towers2024gymnasium}.
+
+\section{Red-Teaming, Self-Play and Co-Evolution}
+\emph{Red-teaming} means attacking your own system to find its weaknesses before an enemy does. In \emph{self-play}, two agents are trained against each other. In the full two-sided game, with $x$ a claim, $\pi_F$ and $\pi_D$ the fraudster and defender policies and $d(x)\in[0,1]$ the detection decision, a simplified pair of objectives is
+\[
+\max_{\pi_F}\ \mathbb{E}\big[\text{payout}(x)\,(1-d(x)) - c_F\,\text{effort}(x)\big],\qquad
+\max_{\pi_D}\ \mathbb{E}\big[\text{caught}(x) - c_D\,\text{false\_alarm}(x)\big].
+\]
+Training both in alternation is called \emph{co-evolution}. This report builds the one-sided first step: a learning fraudster against a \emph{static} defender, followed by one defender update.
+
+\begin{plainwords}
+A locksmith who tests the locks of a bank by trying to break in is red-teaming. If the locksmith finds a way in, the bank changes the lock and the locksmith tries again. The MVP does this once: one break-in attempt, one new lock, and a second attempt with the same technique to see whether the new lock holds.
+\end{plainwords}
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item Accuracy is meaningless at 0.073\% positives (99.93\% for a useless model); use PR-AUC and Recall@k.
+  \item Only information known at submission may be used as input; split by time.
+  \item Peer-group deviation is a tariff-free proxy for ``justified cost''.
+  \item Self-play is a locksmith testing the lock: attack, patch, attack again.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Investigating the Data}\label{ch:datainv}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item the data sources and the problems found in the raw exports
+  \item exploratory findings and how each one becomes a modelling decision
+\end{itemize}
+\end{chapteroverview}
+
+
+This chapter answers GQ9: what data exist, and what do they allow? It describes the sources, the problems found in them and the exploratory findings. The processing steps themselves are documented in Chapter~\ref{ch:dataprep}.
+
+\section{Sources}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.2cm} p{2.2cm} Y@{}}
+\caption{Data sources}\\
+\toprule
+\rowcolor{blue!14} \textbf{Folder} & \textbf{Files} & \textbf{Content} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Folder} & \textbf{Files} & \textbf{Content} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{data/raw/utilization/} & 4 workbooks & Claims data. Each workbook has one \texttt{Data} sheet, one \texttt{Recovery} sheet and one \texttt{PendingAuthorizations} sheet, plus assorted reference sheets (cover page, definitions, provider and group) \\
+\texttt{data/raw/beneficiaries/} & 5 workbooks & Beneficiary and policy data: one \texttt{Sheet1} or \texttt{Data} sheet per workbook \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+The four utilisation workbooks are \texttt{UR UY-2014 - NAS.xlsx}, \texttt{UTILIZ as at JAN 2014.xlsx}, \texttt{Utilization Report - UY-2014 Al Hilal Takaful.xlsx} and \texttt{Utilization Report - UY-2015 Al Hilal Takaful.xlsx}. The five beneficiary workbooks are \texttt{AHT 2014 A/B}, \texttt{AHT 2015 A/B} and \texttt{AHT 2016 A}.
+
+\section{Problems Found in the Raw Exports}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.4cm} Y Y@{}}
+\caption{Problems found in the raw exports and their fixes}\\
+\toprule
+\rowcolor{blue!14} \textbf{Problem} & \textbf{Effect} & \textbf{Fix (Chapter~\ref{ch:dataprep})} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Problem} & \textbf{Effect} & \textbf{Fix (Chapter~\ref{ch:dataprep})} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Three to four decorative title rows above the header & Columns read as ``Unnamed'' & Header-row detection \\
+Corrupted Excel defined name in some workbooks & \texttt{openpyxl} crashes on read & Temporary copy with the defined-names entry stripped \\
+Reference sheets without any table & Nothing to load & Skipped and logged as warnings \\
+\texttt{BENEFICIARYIDENTIFIER} vs.\ \texttt{BENEFICIARYID} & Two different identifier systems (short hex code vs.\ sequential number) that never overlap; joining on them silently matches 0 rows & Join on beneficiary full name + date of birth \\
+Blank vs.\ zero financial cells & A real AED 0 claim and a missing value look the same & \texttt{\_WAS\_MISSING} flag recorded before filling \\
+\texttt{REINSURER} populated by one file only & Column almost empty & Dropped as sparse ($\geq$97\% missing) \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Exploratory Analysis}
+Every chart below is built around the target: it compares recovered claims with all others, so each pattern maps to a candidate model feature.
+
+\subsection{Class imbalance}
+\fig{fig-eda-class-balance.png}{Recovery class imbalance (logarithmic axis): 838{,}595 claims not recovered against 614 recovered or ex-gratia (0.073\%).}{0.62}{fig:eda-balance}
+
+The positive class is about 1{,}366 times smaller than the negative class. A logarithmic axis is needed to show both bars. This is the number that drives every modelling decision: accuracy is rejected, the training uses class weighting, and evaluation relies on PR-AUC and Recall@k\% (Section~\ref{sec:metrics}).
+
+\subsection{Evolution over time}\label{sec:eda-monthly}
+\fig{fig-eda-monthly.png}{Monthly claim volume (left) and monthly recovery rate (right, \% of claims later recovered).}{0.98}{fig:eda-monthly}
+
+\begin{itemize}[nosep]
+  \item \textbf{Volume} is almost zero in late 2013, rises through 2014 to a peak close to 50{,}000 claims per month around early 2015, then settles at about 32{,}000--38{,}000. The last month drops sharply to roughly 16{,}000, which is consistent with a partial month at the end of the data.
+  \item \textbf{Recovery rate} moves between about 0.03\% and 0.13\% from February 2014 to January 2016, with no clear trend. January 2014 shows 0\%, and the last month (February 2016) only 0.013\%.
+  \item \textbf{Label maturity.} A claim from the last months has had less time to be reviewed, so its recovery rate may be understated. This matters for the evaluation years (2015 and 2016) and is listed among the limitations.
+\end{itemize}
+
+\subsection{Recovery rate by claim category and network}
+\fig{fig-eda-fob-network.png}{Recovery rate by claim category (\texttt{FOB}, left) and by network type (right).}{0.98}{fig:eda-fob}
+
+\begin{itemize}[nosep]
+  \item \textbf{By claim category:} Optical (1.92\%), Psychiatry (1.79\%) and Wellness (1.06\%) have rates several times higher than Out-Patient (0.066\%), the largest category with 773{,}222 claims. Dental, In-Patient and Maternity lie between about 0.1\% and 0.2\%.
+  \item \textbf{By network type:} Super-Restricted (0.111\%) and Comprehensive (0.105\%) run about 2.5 times the rate of General (0.045\%); Restricted and Workers lie in between (about 0.08\%).
+  \item Both variables are known at submission time, so they are legitimate pre-adjudication risk cuts.
+\end{itemize}
+
+\subsection{Recovery rate by diagnosis and recovered amount by provider type}
+\fig{fig-eda-icd-provider.png}{Left: recovery rate for the highest-rate ICD chapters reported (minimum 300 claims). Right: total recovered amount by provider type. Values are those reported in the EDA of the data-processing notebook.}{0.98}{fig:eda-icd}
+
+\begin{itemize}[nosep]
+  \item \textbf{Diagnosis:} the highest rates are in low-volume, clinically unusual chapters: mental, behavioural and neurodevelopmental disorders (0.95\%, $n=634$), congenital malformations (0.54\%, $n=742$) and certain perinatal conditions (0.43\%, $n=467$). The high-volume digestive-system chapter has 0.22\% ($n=101{,}051$).
+  \item \textbf{Provider type:} hospitals combine the highest recovery rate (0.104\%) with the largest recovered total: AED 499{,}280 over 328 recovered claims, against AED 64{,}327 for polyclinics and diagnostic centres and AED 52{,}194 for pharmacies.
+\end{itemize}
+
+\subsection{Amount and submission delay}
+Recovered and non-recovered claims were also compared on claimed amount (boxplots) and service-to-reception delay. Both comparisons led to engineered features (\texttt{CLAIM\_AMOUNT\_LOG}, \texttt{DAYS\_TO\_RECEPTION}) instead of staying exploratory observations.
+
+\section{From Findings to Modelling Decisions}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}Y Y Y@{}}
+\caption{From exploratory findings to modelling decisions}\\
+\toprule
+\rowcolor{blue!14} \textbf{Finding} & \textbf{Implication} & \textbf{Decision} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Finding} & \textbf{Implication} & \textbf{Decision} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+0.073\% positives & Accuracy is meaningless & PR-AUC, Recall@k\%, class weighting \\
+Rates differ by diagnosis, category, network and provider type & These cuts carry signal at submission & Keep them as features (one-hot or frequency encoding) \\
+Hospitals dominate recovered amounts & Provider exposure is concentrated & Provider-level frequency and amount features \\
+Recent months less mature & Possible understatement in the test period & State as a limitation; split by year \\
+Very different cost levels per category & Raw amount is hard to judge alone & Peer-group deviation features \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+% =====================================================
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item The positive class is about 1{,}366 times smaller than the negative class.
+  \item Recovery rates differ strongly by claim category, network, diagnosis and provider type.
+  \item Hospitals carry the largest recovered amount; recent months may be under-reported.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Cause and Consequence of Fraud, Waste and Abuse}\label{ch:cause}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item the causes of fraud, waste and abuse (GQ1, GQ2)
+  \item their consequences for the insurer, providers, patients and detection systems (GQ3)
+  \item what this means for the design of the solution
+\end{itemize}
+\end{chapteroverview}
+
+\section{Causes}
+The economic literature explains why fraud, waste and abuse (FWA) occur. In every case the cause is a mismatch between what is paid, what is delivered and what is monitored.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.6cm} Y p{2.2cm}@{}}
+\caption{Causes of fraud, waste and abuse}\\
+\toprule
+\rowcolor{blue!14} \textbf{Cause} & \textbf{Mechanism} & \textbf{Evidence} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Cause} & \textbf{Mechanism} & \textbf{Evidence} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Imperfect reimbursement rates & Prices that do not match cost, and weak penalties, create an incentive to bill more than was delivered & \cite{leder2025} \\
+Price changes & Providers shift diagnosis coding toward better-paid categories, without a change in patients' needs & \cite{dafny2005} \\
+Insurance design (moral hazard) & Coverage and payment rules change how much care is demanded and supplied & \cite{ma2002} \\
+Weak monitoring and competition & A policy meant to cut cost can favour suppliers that avoid compliance costs & \cite{diwan2026} \\
+Waste outside fraud & Overtreatment, coordination failures, pricing failures and administrative complexity & \cite{berwick2012} \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+\paragraph{Why suspicious billing can be legitimate (GQ2).} Because providers respond to the way they are paid, an unusual pattern may be an economically induced response and not intentional fraud \cite{dafny2005,ma2002}. An alert is a reason to look, not a verdict.
+
+\section{Consequences}
+\begin{figure}[H]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tikzpicture}[
+  node distance=0.5cm,
+  b/.style={rectangle,draw,rounded corners,minimum height=1.1cm,text width=2.3cm,align=center,font=\scriptsize},
+  arr/.style={-{Stealth},thick}
+]
+\node[b,fill=orange!15] (a) {Payment incentives and weak monitoring};
+\node[b,fill=orange!15,right=of a] (b) {Unusual or improper billing};
+\node[b,fill=blue!10,right=of b] (c) {Claim is paid};
+\node[b,fill=red!12,right=of c] (d) {Problem found later by manual review};
+\node[b,fill=red!12,right=of d] (e) {Money must be claimed back after payment};
+\draw[arr] (a)--(b); \draw[arr] (b)--(c); \draw[arr] (c)--(d); \draw[arr] (d)--(e);
+\end{tikzpicture}
+\end{adjustbox}
+\caption{From cause to consequence: why detection after payment is a problem.}\label{fig:causechain}
+\end{figure}
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.0cm} Y@{}}
+\caption{Consequences for each actor}\\
+\toprule
+\rowcolor{blue!14} \textbf{Who} & \textbf{Consequence} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Who} & \textbf{Consequence} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Insurer & Unnecessary spending, and money paid before problems are found. In the data, only 614 of 839{,}209 usable claims (0.073\%) ended up in the Recovery sheet \\
+Honest providers & Risk of being flagged for a deviation that is economically induced \cite{dafny2005} \\
+Patients and the system & Inefficient use of resources and loss of trust \cite{leder2025,berwick2012} \\
+Detection systems & Alerts have a cost: investigation workload and false positives must be weighed against recovery \cite{banulescu2025} \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+The schemes through which these causes show up (upcoding, phantom billing, duplicate claims, unbundling, collusion, identity misuse \cite{ai2018}) are listed in Table~\ref{tab:schemes}, together with their link to the simulated attacker.
+
+\section{What This Means for the Solution}
+\begin{itemize}[nosep]
+  \item \textbf{Read alerts in context}, for example by comparing a claim with similar claims, never as proof of fraud.
+  \item \textbf{Detect earlier}: issues are found only after payment, so the objective is to act before or at payment.
+  \item \textbf{Measure the workload}, not only accuracy: use a review budget (the riskiest 5\% of claims) and recall@k.
+  \item \textbf{Anticipate adaptation}: a detector built on past, caught fraud says little about strategies nobody has tried yet, which is what the self-play tests.
+\end{itemize}
+
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item FWA come from payment incentives, imperfect rates, moral hazard and weak monitoring.
+  \item An unusual bill is a hypothesis, not a verdict, because providers respond to payment rules.
+  \item The problem is detection after payment: improper claims are found only after the money has left, and then recovery is needed.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Synthesis: Solution Objective and Roadmap}\label{ch:synthesis}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item what the investigation found and what it implies for the solution
+  \item the research gaps that justify the work
+  \item the solution objective, the objective tree and the success criteria
+  \item the deliverables and the roadmap
+\end{itemize}
+\end{chapteroverview}
+
+\section{From Findings to Design}
+The five categories of guiding questions lead to concrete design choices.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{2.7cm} Y Y@{}}
+\caption{Synthesis: findings of the Investigate phase and their implication for the solution}\\
+\toprule
+\rowcolor{blue!14} \textbf{Category} & \textbf{Finding} & \textbf{Implication for the solution} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Category} & \textbf{Finding} & \textbf{Implication for the solution} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Cause and consequence & An unusual bill is not proof of fraud; the problem comes from detection after payment & Act earlier; read alerts in context; use a review budget \\
+Ethical & Unfair provider rankings, bias from weak labels, dual use of a red-team study & Human in the loop; limitations stated; closed synthetic environment \\
+Legal & GDPR and the UAE, Jordan and Saudi laws require privacy and minimisation & Synthetic-only sandbox; identifier columns removed \\
+Technical (tools and budget) & Tree ensembles fit claim data; PR-AUC and recall@k suit rare positives; open-source tools, CPU only & An XGBoost defender; imbalance-aware evaluation; compact defender \\
+Type of data & 0.073\% positives, messy exports, post-adjudication columns that leak & Leakage-free pipeline; temporal split; CTGAN synthetic claims \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+\section{Research Gaps That Justify This Work}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.6cm} Y p{3.4cm}@{}}
+\caption{Research gaps and their status in this work}\label{tab:gaps}\\
+\toprule
+\rowcolor{blue!14} \textbf{Gap} & \textbf{Description} & \textbf{Status in this work} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Gap} & \textbf{Description} & \textbf{Status in this work} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+G1 -- Economic context & Detectors mostly seek statistical irregularity, while behaviour is shaped by incentives and insurance design & Not addressed (future work) \\
+G2 -- Temporal and behavioural & Claim-level views miss how behaviour evolves, and fraudsters adapt to controls & Partly: the adaptation side, through self-play \\
+G3 -- Relational modelling & Tabular models ignore relations among patients, providers, diagnoses and claims & Not addressed (future work) \\
+G4 -- Explainability and decision support & A probability is not enough: auditors need to know why a claim was flagged & Not addressed; only feature-level reasoning in the red-team report \\
+G5 -- Regional evidence & Little evidence exists for the UAE and Jordan; findings from other systems cannot be assumed to transfer & Yes: a UAE case study with stated limits \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+
+\subsection{How the limitations shape this work}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.6cm} Y Y@{}}
+\caption{Limitations of the literature and the response of this work}\\
+\toprule
+\rowcolor{blue!14} \textbf{Limitation found} & \textbf{Consequence} & \textbf{Response in this work} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Limitation found} & \textbf{Consequence} & \textbf{Response in this work} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Many studies are theoretical or policy-oriented & No claim-level evidence from the UAE & Own claim-level pipeline on Al Hilal Takaful data \\
+Results are not comparable across studies \cite{ai2022} & A reported score cannot be ranked against another & Full documentation: funnel, leakage list, split, metrics \\
+Few labelled fraud cases \cite{dupreez2025} & Supervised models learn only past, caught fraud & Imbalance-aware metrics; adversarial examples as extra positives \\
+Static, claim-level views \cite{muhammad2025} & No temporal or adaptive behaviour & Adaptive attacker in a sequential environment (limited to amounts) \\
+Black-box models & Little use for auditors & Feature-level reasoning in the red-team report \\
+Concentration of evidence on U.S.\ data \cite{dupreez2025} & Doubtful transfer to the UAE & Regional case study, with stated limits \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Solution Objective}
+The investigation leads to one objective for the solution.
+
+\begin{keyresult}[Solution objective]
+Proactively harden fraud and recovery detection in health-insurance claims by discovering evasion strategies before real fraudsters do: an attacker agent invents strategies against a detector in a closed synthetic environment, and the strategies that succeed are used to strengthen the detector.
+\end{keyresult}
+
+\subsection{Objective Tree}
+The objective tree breaks the general objective into specific objectives (SO) and each specific objective into activities.
+
+\begin{figure}[H]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tikzpicture}[
+  grow'=right,
+  every node/.style={font=\scriptsize,rectangle,draw,rounded corners,align=left,inner sep=3pt},
+  edge from parent/.style={draw,-{Stealth}},
+  level 1/.style={level distance=4.3cm,sibling distance=3.7cm,text width=3.9cm,fill=blue!8},
+  level 2/.style={level distance=4.4cm,sibling distance=1.2cm,text width=4.4cm,fill=green!8}
+]
+\node[text width=3.4cm,fill=orange!15] {\textbf{General objective}\\
+Proactively harden fraud and recovery detection in health-insurance claims by discovering evasion strategies before real fraudsters do}
+  child {node {\textbf{SO1}: Understand the problem and the state of the art (research phase, with Z.\ Troudi)}
+    child {node {Read and analyse the key papers}}
+    child {node {Identify limitations and the research gaps}}
+    child {node {Define essential and guiding questions}}
+  }
+  child {node {\textbf{SO2}: Build a clean, leakage-free ML-ready claims dataset}
+    child {node {Consolidate multi-sheet workbooks}}
+    child {node {Clean, merge and explore (EDA)}}
+    child {node {Label, engineer, encode, scale; freeze \texttt{claims\_ml\_ready.csv}}}
+  }
+  child {node {\textbf{SO3}: Build the defender to attack (\texttt{defender\_v1})}
+    child {node {Choose a compact 81-feature encoding that can be re-scored at every step}}
+    child {node {Train XGBoost on years $\leq$2014}}
+    child {node {Evaluate on 2015--2016 with PR-AUC and recall@5\%}}
+  }
+  child {node {\textbf{SO4}: Red-team the detector with adversarial self-play}
+    child {node {Generate synthetic claims (CTGAN)}}
+    child {node {Train a PPO fraudster in \texttt{ClaimFraudEnv}}}
+    child {node {Retrain \texttt{defender\_v2}; write the red-team report}}
+  };
+\end{tikzpicture}
+\end{adjustbox}
+\caption{Objective tree: general objective, specific objectives (SO) and activities.}\label{fig:objtree}
+\end{figure}
+
+
+\subsection{Why adversarial self-play?}
+As Table~\ref{tab:gaps} shows, the implementation addresses the \emph{adaptation} side of G2 and contributes regional evidence for G5; G1, G3 and G4 remain open (Chapter~\ref{ch:future}). With two months, one solution had to be built in depth. Adversarial self-play was chosen because it answers the stated challenge directly, builds on the pipeline and detector already produced, gives a measurable result (attack success before and after retraining) and targets the weakness identified above: detectors trained on history cannot anticipate adaptation.
+
+
+\section{Specific Objectives and Success Criteria}
+Each specific objective has a measurable criterion, used in Chapter~\ref{ch:results} to judge whether it was met.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}l Y Y@{}}
+\caption{Specific objectives and measurable success criteria}\\
+\toprule
+\rowcolor{blue!14} \textbf{SO} & \textbf{Measurable success criterion} & \textbf{Evidence in this report} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{SO} & \textbf{Measurable success criterion} & \textbf{Evidence in this report} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+SO1 & Key papers reviewed with their main limitation; research gaps written down & Chapter~\ref{ch:activities}, Table~\ref{tab:papers} \\
+SO2 & A frozen ML-ready file; every removed row counted; no post-adjudication column among model inputs & Section~\ref{sec:funnel} (funnel), Section~\ref{sec:leakage} (35 columns excluded) \\
+SO3 & A compact defender that can be re-scored cheaply, evaluated with imbalance-aware metrics on a temporal split & Section~\ref{sec:defv1} \\
+SO4 & An end-to-end loop with a measured attack success rate before and after defender retraining & Chapter~\ref{ch:selfplay}; Section~\ref{sec:res-retrain} \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+
+\section{Deliverables}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.2cm} Y@{}}
+\caption{Deliverables of the internship}\\
+\toprule
+\rowcolor{blue!14} \textbf{Deliverable} & \textbf{Description} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Deliverable} & \textbf{Description} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Literature review (with Z.\ Troudi) & Key papers with their limitations and the research gaps (Chapter~\ref{ch:activities}) \\
+Data-processing notebook & \texttt{notebooks/data\_processing.ipynb}: from nine Excel workbooks to \texttt{claims\_ml\_ready.csv} \\
+Self-play pipeline & \texttt{scripts/selfplay/}: defender, CTGAN, environment, PPO, retraining; notebook \texttt{03\_adversarial\_selfplay.ipynb} \\
+Red-team report & Findings and suggested patches (Section~\ref{sec:redteam}) \\
+This report & CBL-structured account of the whole work \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+
+\section{Roadmap}
+The work followed three phases in sequence, from July to August 2026. Each phase produced the input of the next one. The roadmap beyond this internship is given in Chapter~\ref{ch:future}.
+
+\begin{figure}[H]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tikzpicture}[
+  node distance=0.5cm,
+  ph/.style={rectangle,draw,rounded corners,minimum height=1.6cm,minimum width=3.4cm,text width=3.2cm,align=center,font=\scriptsize},
+  arr/.style={-{Stealth},thick}
+]
+\node[ph,fill=blue!10] (r) {\textbf{Phase 1}\\Research:\\Reading and review of the key papers\\\textit{(pair: Z.\ Troudi)}};
+\node[ph,fill=blue!10,right=of r] (p2) {\textbf{Phase 2}\\Data processing\\(consolidate, clean, EDA, features)};
+\node[ph,fill=green!12,right=of p2] (p4) {\textbf{Phase 3}\\Adversarial self-play MVP and red-team report};
+\draw[arr] (r)--(p2);
+\draw[arr] (p2)--(p4);
+\end{tikzpicture}
+\end{adjustbox}
+\caption{Sequence of the three phases (July--August 2026).}\label{fig:phases}
+\end{figure}
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}l Y l@{}}
+\caption{Work phases and responsibilities}\\
+\toprule
+\rowcolor{blue!14} \textbf{Phase} & \textbf{Main activities} & \textbf{Who} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Phase} & \textbf{Main activities} & \textbf{Who} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Phase 1 & Research: reading and review of the key papers, limitations, research gaps & Pair (with Z.\ Troudi) \\
+Phase 2 & Data processing: consolidation, cleaning, EDA, ML-ready export & Individual \\
+Phase 3 & Adversarial self-play MVP, retraining round and red-team report & Individual \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item The investigation found a clear design: act earlier, read alerts in context, keep a human in the loop, use synthetic data, and evaluate with PR-AUC and recall@k.
+  \item Five research gaps remain; this work addresses the adaptation side of G2 and brings regional evidence for G5.
+  \item The solution objective, one general and four specific objectives with success criteria, and a three-phase roadmap close the Investigate phase.
+\end{itemize}
+\end{chaptersummary}
+
+\partopener{ACT}{act}{3}{Build, test and criticise: from raw data to a self-play red team}{\noindent\textbf{What happens in this phase.} A solution is designed, built, evaluated and critically discussed. The implementation is \textbf{individual work} and is limited to one solution: \emph{adversarial self-play}.\par\medskip
+\noindent\textbf{Chapters in this part.}
+\begin{itemize}[nosep]
+  \item Chapter~\ref{ch:solution} -- Solution Concept and Architecture
+  \item Chapter~\ref{ch:dataprep} -- Data Processing Pipeline
+  \item Chapter~\ref{ch:selfplay} -- Adversarial Self-Play Red-Teaming (Phase~3)
+  \item Chapter~\ref{ch:results} -- Results, Red-Team Report and Discussion
+  \item Chapter~\ref{ch:limits} -- Limitations
+  \item Chapter~\ref{ch:future} -- Future Work
+  \item Chapter~\ref{ch:conclusion} -- Reflection and Conclusion
+\end{itemize}\medskip
+\noindent\textbf{Outputs.} A frozen ML-ready dataset (839{,}209 $\times$ 110); a compact XGBoost defender; CTGAN synthetic claims; a custom RL environment and PPO attacker; a retrained defender; a red-team report; limitations and a roadmap.}\label{part:act}
+
+
+\chapter{Solution Concept and Architecture}\label{ch:solution}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item the solution concept and the two-stage architecture
+  \item components, data flow, code organisation and design decisions
+  \item the scope agreed before building the MVP
+\end{itemize}
+\end{chapteroverview}
+
+
+\section{Solution Concept}
+A model trained on confirmed recoveries only knows fraud that has already happened. The solution builds a closed loop in which a simulated fraudster \emph{invents} evasion strategies against a detector. The strategies that succeed are labelled as fraud and folded back into training, which patches the holes before a real actor exploits them. The output is a red-team report, not an operational fraud-generation system.
+
+\begin{plainwords}
+Three actors are involved: a \emph{guard} (the detector), a \emph{thief} (the attacker agent) and a \emph{training ground} (synthetic claims in a closed environment). The thief practises on the training ground. Every trick that works is shown to the guard, who learns to recognise it. Then the thief tries the same trick again, to see whether the guard has really learned.
+\end{plainwords}
+
+\section{End-to-End Architecture}
+The work has two stages: data processing and the self-play loop.
+
+\begin{figure}[H]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tikzpicture}[
+  node distance=0.6cm and 0.8cm,
+  box/.style={rectangle,draw,rounded corners,minimum height=1.0cm,minimum width=3.0cm,align=center,font=\scriptsize},
+  d/.style={box,fill=blue!8},
+  m/.style={box,fill=orange!12},
+  s/.style={box,fill=green!10},
+  arr/.style={-{Stealth},thick}
+]
+% Row 1: data processing
+\node[d] (a1) {Raw Excel\\(9 workbooks)};
+\node[d,right=of a1] (a2) {Load \&\\consolidate};
+\node[d,right=of a2] (a3) {Beneficiary merge\\\& cleaning};
+\node[d,right=of a3] (a4) {EDA \&\\RECOVERY\_FLAG};
+% Row 2: feature preparation
+\node[d,below=1.0cm of a1] (b1) {Feature\\engineering};
+\node[d,right=of b1] (b2) {Encoding, missing\\values, scaling};
+\node[d,right=of b2] (b3) {\texttt{claims\_ml\_ready.csv}\\839{,}209 $\times$ 110};
+% Row 3: self-play
+\node[s,below=1.0cm of b1] (c1) {\texttt{defender\_v1}\\(XGBoost, 81 features)};
+\node[s,right=of c1] (c2) {CTGAN\\20{,}000 synthetic claims};
+\node[s,right=of c2] (c3) {\texttt{ClaimFraudEnv}\\+ PPO fraudster};
+\node[s,right=of c3] (c4) {\texttt{defender\_v2}\\+ red-team report};
+\foreach \x/\y in {a1/a2,a2/a3,a3/a4,b1/b2,b2/b3,c1/c2,c2/c3,c3/c4}
+  \draw[arr] (\x)--(\y);
+\draw[arr] (a4.south) -- ++(0,-0.5) -| (b1.north);
+\draw[arr] (b3.south) -- ++(0,-0.5) -| (c1.north);
+\draw[arr,dashed] (c3.south) -- ++(0,-0.7) -| (c4.south) node[pos=0.25,below,font=\tiny]{337 evasive claims labelled as fraud $\to$ retrain};
+\end{tikzpicture}
+\end{adjustbox}
+\caption{Architecture of the work: data processing (blue) and adversarial self-play (green).}\label{fig:architecture}
+\end{figure}
+
+\section{Components and Their Roles}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.4cm} Y Y@{}}
+\caption{Components of the solution and their roles}\\
+\toprule
+\rowcolor{blue!14} \textbf{Component} & \textbf{Role} & \textbf{Input $\to$ output} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Component} & \textbf{Role} & \textbf{Input $\to$ output} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Data pipeline & Turns raw exports into a clean, leakage-free modelling table & 9 Excel workbooks $\to$ \texttt{claims\_ml\_ready.csv} \\
+\texttt{defender\_v1} & Compact detector that can be re-scored at RL speed & 81 encoded features $\to$ risk score \\
+CTGAN & Creates the synthetic claim pool, so no real patient data is used in the sandbox & Real claims ($\leq$2014) $\to$ 20{,}000 synthetic claims \\
+\texttt{ClaimFraudEnv} & Simulates a fraudster trying to extract a fraud budget & Synthetic claim + action $\to$ caught / not caught \\
+PPO agent & Learns how much to submit at each step & Observation (83 dims) $\to$ amount fraction \\
+\texttt{defender\_v2} & Detector retrained with discovered evasive claims & Real data + 337 adversarial positives $\to$ stronger score \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Data Flow and Artefacts}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{5.0cm} p{3.2cm} Y@{}}
+\caption{Data flow: artefacts, producers and consumers}\\
+\toprule
+\rowcolor{blue!14} \textbf{Artefact} & \textbf{Produced by} & \textbf{Used by} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Artefact} & \textbf{Produced by} & \textbf{Used by} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{consolidated\_claims\_all\_reports.csv} & Data pipeline & \texttt{defender\_v1} and CTGAN (raw, unscaled columns, joined by row position) \\
+\texttt{claims\_ml\_ready.csv} & Data pipeline & 8 pre-scaled features of \texttt{defender\_v1}; \texttt{CLAIM\_YEAR} for the temporal split \\
+\texttt{recovery\_ex\_gratia\_claims.csv} & Data pipeline & Recovery analysis (614 claims) \\
+\texttt{defender\_v1} (XGBoost model) & \texttt{train\_defender.py} & Environment scoring; reference for retraining \\
+Synthetic claim pool (20{,}000 rows) & \texttt{train\_ctgan.py} & \texttt{ClaimFraudEnv} \\
+Trained PPO policy & \texttt{train\_ppo.py} & Evaluation; source of evasive claims \\
+\texttt{defender\_v2} & \texttt{retrain\_defender\_v2.py} & Second evaluation round \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Code Organisation}
+\begin{lstlisting}[language={},caption={Repository layout used for the implementation.}]
+data/
+  raw/utilization/        4 claim workbooks
+  raw/beneficiaries/      5 beneficiary workbooks
+  processed/              CSV exports (see Chapter on data processing)
+notebooks/
+  data_processing.ipynb           generated by scripts/build_notebook.py
+  03_adversarial_selfplay.ipynb   generated by scripts/build_selfplay_notebook.py
+scripts/
+  venv/                           CPU-only environment
+  selfplay/
+    common.py            feature set and encoder (81 dims), encode_amount_only()
+    train_defender.py    defender_v1
+    train_ctgan.py       synthetic claim pool
+    fraud_env.py         ClaimFraudEnv (Gymnasium)
+    train_ppo.py         PPO training and evaluation
+    retrain_defender_v2.py
+\end{lstlisting}
+
+\section{Design Decisions}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.4cm} Y Y@{}}
+\caption{Design decisions, alternatives considered and reasons}\\
+\toprule
+\rowcolor{blue!14} \textbf{Decision} & \textbf{Alternative considered} & \textbf{Reason for the choice} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Decision} & \textbf{Alternative considered} & \textbf{Reason for the choice} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Compact defender with 81 features & Use the full 109-column encoding of \texttt{claims\_ml\_ready.csv} & The environment must re-score a claim after every amount change, possibly hundreds of thousands of times; its frequency encodings and peer or provider aggregates were fitted on the whole dataset and cannot be recomputed per step \\
+Gymnasium single-agent environment & PettingZoo two-sided game & Prove the mechanism end to end before the harder multi-agent version \\
+Static defender + one retraining round & Full co-evolution over many rounds & Scope and time; one round already gives an informative result \\
+Synthetic claims from CTGAN & Real claims in the environment & Privacy, and an unlimited supply of episodes without overfitting to real records \\
+Action = fraction of remaining budget & Direct choice of claim attributes & Keeps one continuous action; splitting and staying under a threshold can emerge instead of being hard-coded \\
+Attacker controls only the amount & Control of timing, provider, diagnosis & Amount-dependent features can be recomputed cheaply; all other fields are frozen per baseline claim \\
+Detection threshold = 95th percentile of training scores & Fixed probability cut-off & Mirrors the audit-queue idea: ``caught'' means landing in the riskiest 5\% by the defender's own judgement \\
+PPO (Stable-Baselines3) & LLM-based or tool-calling fraudster & Simplest well-supported algorithm for a continuous action; LLM agent left for later \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Scope Agreed Before Building the MVP}
+The full proposal describes a PettingZoo multi-agent environment, an attacker that keeps adapting over thousands of rounds, and a defender that co-evolves round by round. That is closer to a thesis chapter than to a notebook extension. Three scope questions were therefore settled explicitly before building.
+
+\begin{enumerate}[nosep]
+  \item \textbf{MVP first:} a single PPO fraudster (Gymnasium, not PettingZoo) against one \textbf{static} defender, not the full co-evolution loop.
+  \item \textbf{Real-data boundary:} CTGAN trains on real claims; everything downstream in the RL sandbox sees only CTGAN-sampled synthetic claims.
+  \item \textbf{New dependencies:} \texttt{torch} (CPU-only build, since the available GPU driver, CUDA 11.2, is old), \texttt{gymnasium}, \texttt{stable-baselines3} and \texttt{ctgan} in \texttt{scripts/venv}.
+\end{enumerate}
+
+One bonus beyond this scope was added: a single round of defender retraining (Section~\ref{sec:retrain}). It was cheap to run and far more informative than stopping at the static comparison.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.0cm} Y Y@{}}
+\caption{Full proposal versus the MVP that was built}\\
+\toprule
+\rowcolor{blue!14} \textbf{Element} & \textbf{Full proposal} & \textbf{Built in the MVP} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Element} & \textbf{Full proposal} & \textbf{Built in the MVP} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Environment & PettingZoo, two-sided & Gymnasium, attacker only \\
+Defender & Co-evolves each round & Static, then one retraining round \\
+Number of rounds & Thousands & 1 (plus a second evaluation) \\
+Attacker type & PPO and LLM-based / tool-calling agent & PPO only \\
+Defender features & Full peer-deviation-aware set & Reduced set, peer features excluded on purpose \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+% =====================================================
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item Two stages: data processing and the self-play loop.
+  \item A compact 81-feature defender is needed because the agent re-scores claims at RL speed.
+  \item MVP scope: one PPO attacker, one static defender, one retraining round.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Data Processing Pipeline}\label{ch:dataprep}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item every step from nine Excel workbooks to the frozen ML-ready dataset
+  \item cleaning funnel, leakage columns, feature engineering, encoding and scaling
+\end{itemize}
+\end{chapteroverview}
+
+
+This chapter documents, in order, everything the pipeline does to turn the raw Al Hilal Takaful Excel exports into \texttt{data/processed/claims\_ml\_ready.csv}, the frozen dataset used for modelling, and why each step exists. Source notebook: \texttt{notebooks/data\_processing.ipynb}, generated by \texttt{scripts/build\_notebook.py}. Code excerpts are illustrative sketches of the documented logic.
+
+\begin{figure}[H]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tikzpicture}[
+  node distance=0.4cm,
+  st/.style={rectangle,draw,rounded corners,fill=blue!8,minimum height=1.0cm,minimum width=2.2cm,text width=2.1cm,align=center,font=\scriptsize},
+  arr/.style={-{Stealth},thick}
+]
+\node[st] (s1) {1. Load and consolidate};
+\node[st,right=of s1] (s2) {2. Merge beneficiaries};
+\node[st,right=of s2] (s3) {3. Clean and standardise};
+\node[st,right=of s3] (s4) {4. Business-logic filters};
+\node[st,right=of s4] (s5) {5. EDA and label};
+\node[st,right=of s5] (s6) {6. Features, encoding, scaling};
+\node[st,right=of s6,fill=green!12] (s7) {7. Frozen ML-ready file};
+\foreach \x/\y in {s1/s2,s2/s3,s3/s4,s4/s5,s5/s6,s6/s7} \draw[arr] (\x)--(\y);
+\end{tikzpicture}
+\end{adjustbox}
+\caption{Stages of the data-processing pipeline.}\label{fig:dataflow}
+\end{figure}
+
+\section{Inputs}
+Nine Excel workbooks: four utilisation workbooks (claims) and five beneficiary workbooks (policy and member data), as listed in Chapter~\ref{ch:datainv}. The exports are not clean tables: each sheet has a handful of title rows above the real header, some workbooks carry a corrupted defined name that crashes \texttt{openpyxl}, and several reference sheets have no tabular header at all.
+
+\section{Step 1: Loading and Consolidation}
+
+\subsection{\texttt{strip\_defined\_names}}
+Some workbooks have a broken named-range definition that crashes \texttt{openpyxl}. The fix creates a temporary copy of the file with the defined-names XML entry stripped. The workbook is not re-exported, so the data stays untouched.
+
+\subsection{\texttt{detect\_header\_row}}
+It scans the first rows of a sheet for the row that really looks like column headers (not a title or logo row), because raw exports put three to four decorative rows above the header.
+
+\begin{lstlisting}[caption={Header detection (illustrative).}]
+def detect_header_row(raw, key_cols, scan_rows=15):
+    """Return the index of the first row that contains known column names."""
+    for i, row in raw.head(scan_rows).iterrows():
+        values = set(row.astype(str).str.strip())
+        if any(k in values for k in key_cols):
+            return i
+    return None   # no tabular header: reference sheet, skipped and logged
+\end{lstlisting}
+
+\subsection{\texttt{load\_workbook\_sheets}}
+It opens every \texttt{.xlsx} of a folder, loads every sheet whose header can be detected and skips the others (logged as warnings: these are reference or cover sheets, not data loss). Every row is tagged with its origin: \texttt{source\_file} and \texttt{REPORT\_TYPE} for claims, \texttt{BENEF\_SHEET} for beneficiaries.
+
+\begin{center}
+\small
+\captionof{table}{Rows loaded from the raw workbooks}
+\begin{tabular}{@{}l r@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Result of loading} & \textbf{Rows} \\
+\midrule
+Claims (all \texttt{Data}, \texttt{Recovery} and \texttt{PendingAuthorizations} sheets of 4 workbooks) & 1{,}017{,}993 \\
+Beneficiaries (5 workbooks) & 159{,}981 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Step 2: Cleaning and Standardisation}
+
+\subsection{The join key problem}
+\texttt{BENEFICIARYIDENTIFIER} (claims side) and \texttt{BENEFICIARYID} (beneficiary side) look like a matching pair but belong to two different identifier systems: a short hexadecimal code on one side, a sequential numeric ID on the other. They never overlap, so joining on them \emph{silently} matches 0 rows. The reliable shared key is the \textbf{beneficiary full name + date of birth}, built the same way on both sides.
+
+\begin{lstlisting}[caption={Join key on name and date of birth (illustrative).}]
+def make_key(df, name_col, dob_col):
+    name = df[name_col].astype(str).str.strip().str.upper()
+    dob  = pd.to_datetime(df[dob_col], errors="coerce").dt.strftime("%Y-%m-%d")
+    return name + "|" + dob
+
+claims["JOIN_KEY"] = make_key(claims, "BENEFICIARY", "DOB")
+benef["JOIN_KEY"]  = make_key(benef,  "BENEFICIARY", "DOB")
+\end{lstlisting}
+
+\begin{caution}[Lesson]
+A join that returns no error can still return no match. The mismatch was found by checking the number of matched rows, not by trusting the column names.
+\end{caution}
+
+\subsection{Dates and financial columns}
+\begin{itemize}[nosep]
+  \item \textbf{Dates} are parsed to real datetimes.
+  \item \textbf{Financial columns} (\texttt{PAYERAMOUNTCLAIMED}, \texttt{BENEFICIARYAMOUNTCLAIMED}, \texttt{TOTALAMOUNTCLAIMED}, \texttt{TOTALPAYABLE}, \texttt{PAYERSHARE}, \texttt{BENEFICIARYSHAREAPPROVED}, \texttt{DEDUCTIONAMOUNT}, \dots) are coerced to numeric, and a \texttt{\_WAS\_MISSING} flag is recorded \emph{before} blanks are filled with 0.0. A genuine AED 0 claim therefore stays distinguishable from a blank or unparseable source cell.
+\end{itemize}
+
+\begin{lstlisting}[caption={Numeric coercion with a missing flag (illustrative).}]
+for c in financial_cols:
+    s = pd.to_numeric(df[c], errors="coerce")
+    df[c + "_WAS_MISSING"] = s.isna().astype(int)   # record BEFORE filling
+    df[c] = s.fillna(0.0)
+\end{lstlisting}
+
+\section{Step 3: Business-Logic Filters}
+
+\subsection{A. Status definitions}
+Each \texttt{STATUS} code is mapped to a plain-English definition (17 statuses, from \texttt{Initial} and \texttt{Authorized} to \texttt{Settled}, \texttt{Rejected} and \texttt{Void}).
+
+\subsection{B. Rejected and void claims}
+These are split into their own frame (\texttt{df\_excluded\_claims}) and exported separately instead of being silently dropped: they carry no recovery information and are not valid training rows, but they stay on disk for audit. In this data pull, 0 rows were Rejected or Void.
+
+\subsection{C. Beneficiary merge}
+A left join on name and date of birth matched \textbf{944{,}205 of 1{,}017{,}993 claims (92.8\%)} to a beneficiary record. Sixteen duplicate columns with the suffix \texttt{\_beneficiary} were dropped (the same fact is already on the claims side). Three sparse columns with $\geq$97\% missing values were dropped: \texttt{REINSURER} (only one source file ever populates it: a real gap in the source, not a bug), \texttt{Recovery Notes} and \texttt{RecoveryNotes}.
+
+\subsection{D. Post-termination claims}
+Nine rows whose service date falls after the policy's expiry date (\texttt{TXNDATE > EXPIRYDATE}) were \textbf{removed}, not only flagged: a claim serviced outside the covered period is not a valid case for a recovery model to learn from. They are exported to \texttt{excluded\_post\_termination\_claims.csv} for audit.
+
+\subsection{E. Missing core fields}
+Rows missing any of \texttt{TOTALAMOUNTCLAIMED}, \texttt{TXNDATE}, \texttt{STATUS}, \texttt{PROVIDERTYPE}, \texttt{CLAIMID} or \texttt{ICD CHAPTER} were dropped: \textbf{178{,}775 rows, 17.6\%} of the pre-cleaning total. This is the largest single reduction of the pipeline. These rows are unusable for modelling whatever the imputation strategy.
+
+\subsection{F. Recovery sub-table}
+Rows with \texttt{RECOVERY/EX-GRATIA > 0} are pulled into their own frame (\texttt{df\_recovery}), the basis of the \texttt{RECOVERY\_FLAG} label.
+
+\subsection{Cleaning funnel}\label{sec:funnel}
+\begin{center}
+\small
+\captionof{table}{Cleaning funnel.}
+\begin{tabular}{@{}l r r@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Stage} & \textbf{Rows removed} & \textbf{Rows remaining} \\
+\midrule
+Combined raw claims & -- & 1{,}017{,}993 \\
+Rejected / Void & 0 & 1{,}017{,}993 \\
+Post-termination claims & 9 & 1{,}017{,}984 \\
+Missing core field & 178{,}775 (17.6\%) & 839{,}209 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The final cleaned dataset (\texttt{df\_final}) has \textbf{839{,}209 rows and 79 columns}. It contains \textbf{614 recovery or ex-gratia rows (0.073\%)}, the class-imbalance number that drives every modelling decision.
+
+\begin{figure}[H]
+\centering
+\begin{adjustbox}{max width=0.95\textwidth}
+\begin{tikzpicture}
+\def\barscale{0.0042}
+\foreach \lbl/\val/\col/\txt [count=\i from 0] in {Combined raw/1017.993/blue!25/1{,}017{,}993, After Rejected-Void filter/1017.993/blue!25/1{,}017{,}993, After post-termination filter/1017.984/blue!25/1{,}017{,}984, Final cleaned/839.209/green!35/839{,}209} {
+  \fill[\col] (0,-\i*1.0) rectangle (\val*\barscale,-\i*1.0-0.7);
+  \node[anchor=west,font=\scriptsize] at (\val*\barscale+0.15,-\i*1.0-0.35) {\lbl: \txt};
+}
+\end{tikzpicture}
+\end{adjustbox}
+\caption{Rows remaining at each stage of the cleaning funnel (bar length proportional to the number of rows).}\label{fig:funnelbars}
+\end{figure}
+
+\section{Step 4: Exports}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{5.6cm} Y@{}}
+\caption{Exports of the data pipeline}\\
+\toprule
+\rowcolor{blue!14} \textbf{File in \texttt{data/processed/}} & \textbf{Content} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{File in \texttt{data/processed/}} & \textbf{Content} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{consolidated\_claims\_all\_reports.csv} & \texttt{df\_final}: 839{,}209 cleaned claims, all pre- and post-adjudication columns, raw (unscaled) values \\
+\texttt{recovery\_ex\_gratia\_claims.csv} & The 614 recovered or ex-gratia claims, with recovery-specific columns \\
+\texttt{excluded\_rejected\_void\_claims.csv} & Rejected and void claims (0 rows in this pull) \\
+\texttt{excluded\_post\_termination\_claims.csv} & The 9 post-termination rows removed in step D \\
+\texttt{claims\_ml\_ready.csv} & Modelling export: 839{,}209 rows $\times$ 110 columns \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Step 5: Exploratory Analysis and the Target}
+The exploratory charts are presented in Chapter~\ref{ch:datainv} (Figures~\ref{fig:eda-balance}--\ref{fig:eda-icd}). The target is created as
+
+\begin{lstlisting}[caption={Target label.}]
+df["RECOVERY_FLAG"] = (df["RECOVERY/EX-GRATIA"] > 0).astype(int)
+\end{lstlisting}
+
+so that a recovery amount greater than zero gives 1 and a recovery amount of zero gives 0. This turns the business problem into binary classification.
+
+\section{Step 6: Leakage and Identifier Columns}\label{sec:leakage}
+The file \texttt{df\_final} is analyst-friendly, but it mixes \emph{pre-adjudication} facts (known at submission) with \emph{post-adjudication} facts (known only after the claim has been processed, settled or recovered). A model meant to score claims \emph{before payment} must never see post-adjudication columns.
+
+\subsection{14 leakage columns}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{5.8cm} Y@{}}
+\caption{The 14 leakage columns and why they leak}\\
+\toprule
+\rowcolor{blue!14} \textbf{Column} & \textbf{Why it leaks} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Column} & \textbf{Why it leaks} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{STATUS}, \texttt{STATUS\_DESCRIPTION} & Adjudication outcome \\
+\texttt{TOTALPAYABLE}, \texttt{PAYERSHARE}, \texttt{BENEFICIARYSHAREAPPROVED}, \texttt{DEDUCTIONAMOUNT}, \texttt{PAYABLE NON IP CONSULTATION} & Amounts computed during adjudication \\
+\texttt{RECOVERY/EX-GRATIA}, \texttt{RECOVERYTYPE} & The answer itself \\
+\texttt{PO}, \texttt{ORDERDATE}, \texttt{CHEQUENBR}, \texttt{SETTLEDATE} & Payment and settlement data \\
+\texttt{ASSESSMENT} & Post-processing assessment \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+Including any of them would let the model ``cheat'' by learning the answer instead of the risk pattern.
+
+\subsection{21 identifier and metadata columns}
+\texttt{CLAIMID}, \texttt{AUTHORIZATIONNBR}, \texttt{INVOICENBR}, \texttt{BENEFICIARYID}, \texttt{BENEFICIARYIDENTIFIER}, \texttt{MASTERCONTRACT}, \texttt{CONTRACT}, \texttt{PRINCIPAL}, \texttt{BENEFICIARY}, \texttt{PAYER}, \texttt{POLICYNO}, \texttt{POLICYNUMBER}, \texttt{CARDNUMBER}, \texttt{NATIONALIDENTITYNO}, \texttt{ENDORSEMENTID}, \texttt{ENDOTYPE}, \texttt{ENDORSEMENTDATE}, \texttt{ISSUEDATE}, \texttt{REPORT\_TYPE}, \texttt{source\_file}, \texttt{BENEF\_SHEET}. They are free text, administrative metadata or row-unique identifiers that cannot generalise as model inputs.
+
+\begin{caution}[Consequence]
+Neither claim identifiers nor raw (unscaled) currency amounts survive into \texttt{claims\_ml\_ready.csv}. Any later step that needs raw values, such as the self-play defender and CTGAN (Chapter~\ref{ch:selfplay}), therefore uses a \textbf{row-position join} back to \texttt{consolidated\_claims\_all\_reports.csv}. It is safe because both files share the same row order and row count; the alignment was checked row by row against \texttt{RECOVERY\_FLAG} with zero mismatches across 839{,}209 rows.
+\end{caution}
+
+\section{Step 7: Feature Engineering}\label{sec:features}
+About 19 features were engineered from facts known at submission.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.4cm} Y Y@{}}
+\caption{Engineered features and their rationale}\\
+\toprule
+\rowcolor{blue!14} \textbf{Feature} & \textbf{What it captures} & \textbf{Why it matters for recovery risk} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Feature} & \textbf{What it captures} & \textbf{Why it matters for recovery risk} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{DAYS\_TO\_RECEPTION} & Gap between service date and claim reception & Unusual lag (too long, or suspiciously immediate) is a standard red flag \\
+\texttt{POLICY\_DAYS\_REMAINING} & Days left before policy expiry at claim time & ``Use it before you lose it'' spikes near policy lapse \\
+\texttt{MEMBER\_TENURE\_DAYS} & Days enrolled before filing & A large claim shortly after enrolment is a classic opportunistic pattern \\
+\texttt{CLAIM\_YEAR}, \texttt{CLAIM\_MONTH}, \texttt{CLAIM\_QUARTER}, \texttt{CLAIM\_IS\_WEEKEND} & Timing and seasonality & Separates real seasonal illness from anomalous timing \\
+\texttt{CLAIM\_AMOUNT\_LOG} & $\log(1+\texttt{TOTALAMOUNTCLAIMED})$ & Reshapes a heavily right-skewed amount so a few huge claims do not dominate \\
+\texttt{RESUBMISSION\_FLAG} & Whether the claim was resubmitted & A claim needing correction already had something wrong once \\
+\texttt{PROVIDER\_CLAIM\_FREQ}, \texttt{NETWORK\_CLAIM\_FREQ} & How often the provider or network appears & Established, high-volume provider vs.\ rarely seen clinic, without thousands of dummies \\
+\texttt{PEER\_MEDIAN}, \texttt{PEER\_MEAN}, \texttt{PEER\_STD}, \texttt{PEER\_ZSCORE}, \texttt{AMOUNT\_OVER\_MEDIAN} & Amount relative to similar claims & Intended as a tariff-free signal of unusual cost \\
+\texttt{PROVIDER\_AVG\_AMOUNT}, \texttt{PROVIDER\_MEDIAN\_AMOUNT}, \texttt{PROVIDER\_STD\_AMOUNT} & Each provider's typical billing & Captures provider billing behaviour \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\subsection{Peer-deviation features}
+Claims are grouped by \texttt{ICD CHAPTER} $\times$ \texttt{AGEBAND} $\times$ \texttt{FOB}. Within each group, the median, mean and standard deviation of the claimed amount are computed, then \texttt{PEER\_ZSCORE} and \texttt{AMOUNT\_OVER\_MEDIAN} (formulas in Chapter~\ref{ch:concepts}). If similar claims usually cost AED 1{,}000 and a claim costs AED 5{,}000, \texttt{AMOUNT\_OVER\_MEDIAN} is 5. This is a tariff-free version of ``medically justified cost''. They are part of \texttt{claims\_ml\_ready.csv}; the self-play defender leaves them out on purpose (Section~\ref{sec:defv1}).
+
+\begin{lstlisting}[caption={Peer-deviation features (illustrative).}]
+keys = ["ICD CHAPTER", "AGEBAND", "FOB"]
+g = df.groupby(keys)["TOTALAMOUNTCLAIMED"]
+df["PEER_MEDIAN"] = g.transform("median")
+df["PEER_MEAN"]   = g.transform("mean")
+df["PEER_STD"]    = g.transform("std")
+df["PEER_ZSCORE"] = (df["TOTALAMOUNTCLAIMED"] - df["PEER_MEAN"]) / df["PEER_STD"]
+df["AMOUNT_OVER_MEDIAN"] = df["TOTALAMOUNTCLAIMED"] / df["PEER_MEDIAN"]
+\end{lstlisting}
+
+\begin{plainwords}
+Comparing a claim with similar claims is like judging a restaurant bill: AED 200 is normal for a family dinner but strange for a single coffee. The peer group tells the model what ``similar'' costs.
+\end{plainwords}
+
+\section{Step 8: Encoding, Missing Values and Scaling}
+
+\subsection{Encoding}
+\begin{itemize}[nosep]
+  \item \textbf{One-hot encoding} for 18 low-cardinality columns (for example \texttt{GENDER}, \texttt{PROVIDERTYPE}, \texttt{FOB}, \texttt{CHRONIC}, \texttt{CLAIM CATEGORY}, \texttt{NETWORK TYPE}, \texttt{PROVIDER EMIRATE}), giving about 75 dummy columns. One zero-variance dummy was dropped (\texttt{CURRENCY\_Arab Emirates Dirham}: every claim has the same currency).
+  \item \textbf{Frequency encoding} for 10 high-cardinality columns: \texttt{PROVIDER}, \texttt{NATIONALITY}, \texttt{ICD CHAPTER}, \texttt{ICD SUB CHAPTER}, \texttt{NETWORK}, \texttt{EMPNO}, \texttt{CATEGORY}, \texttt{PROVIDERCOUNTRY}, \texttt{PROVIDER GROUP}, \texttt{PRODUCT}. One-hot encoding thousands of providers would explode the width and memorise identities instead of learning behaviour.
+  \item \textbf{Nine raw datetime columns dropped} (\texttt{EFFECTIVEDATE}, \texttt{EXPIRYDATE}, \texttt{DOB}, \texttt{TXNDATE}, \texttt{DISCHARGEDATE}, \texttt{MEMBER START DATE}, \texttt{RECEPTIONDATE}, \texttt{CONTRACTEFFDATE}, \texttt{CONTRACTEXPDATE}): their signal is already in the engineered \texttt{*\_DAYS} and \texttt{CLAIM\_MONTH} features.
+\end{itemize}
+
+\begin{lstlisting}[caption={Frequency encoding (illustrative).}]
+for c in high_card_cols:
+    df[c] = df[c].map(df[c].value_counts(normalize=True))
+\end{lstlisting}
+
+\begin{caution}[Known limitation, stated in the notebook itself]
+Frequency encoding is computed on the \emph{whole} dataset, not fitted on the training fold only. In a strict train--test regime this leaks a small amount of test-period information into the encoding. It is kept as a stated simplification and named in the limitations (Chapter~\ref{ch:limits}).
+\end{caution}
+
+\subsection{Missing values}
+Remaining numeric missing values are filled with 0, and indicator columns (for example \texttt{LOS\_WAS\_NA}, \texttt{NETPREMIUM\_WAS\_NA}, \texttt{GROSSPREMIUM\_WAS\_NA}) let the model separate a true zero from a missing value.
+
+\subsection{Scaling}
+Thirty-three continuous numeric columns (including \texttt{AGE}, \texttt{LOS}, all claimed-amount columns, all engineered day-gap features and all frequency and peer-deviation features) are standardised with \texttt{StandardScaler} (mean 0, standard deviation 1). One-hot dummies and 0/1 flags stay unscaled: they are already on a comparable range, and standardising them would roughly double memory use for no benefit.
+
+\texttt{CLAIM\_YEAR} is \textbf{deliberately kept raw}. The train/validation/test split is built directly on this column, and a standardised z-score would destroy the real years (2013--2016) needed for the split.
+
+\section{Step 9: The Frozen ML-Ready Dataset}
+\begin{center}
+\small
+\captionof{table}{Properties of the frozen ML-ready dataset}
+\begin{tabular}{@{}l r@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Property of \texttt{claims\_ml\_ready.csv}} & \textbf{Value} \\
+\midrule
+Rows & 839{,}209 \\
+Columns & 110 (109 features + \texttt{RECOVERY\_FLAG}) \\
+Positive class (\texttt{RECOVERY\_FLAG}=1) & 614 (0.073\%) \\
+Claim ID or raw currency amount present & No (by design) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Known Data-Quality Notes}
+\begin{itemize}[nosep]
+  \item \textbf{Beneficiary join keys do not match:} the two ID systems are different; name + date of birth was used instead (92.8\% of claims matched).
+  \item \textbf{\texttt{REINSURER} is genuinely blank:} only one file populates it, so it was dropped as sparse. This is a gap in the source, not a pipeline bug.
+  \item \textbf{Weak-label caveat:} ``not recovered'' does not necessarily mean ``clean''. It may mean nobody caught it yet. This is a standard limitation of fraud detection under noisy labelling and carries into every result.
+\end{itemize}
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item 1{,}017{,}993 raw rows become 839{,}209 clean claims, with 614 recoveries.
+  \item 14 leakage columns and 21 identifier columns are excluded from the inputs.
+  \item About 19 features are engineered; the frozen file is 839{,}209 $\times$ 110; frequency encoding on the whole dataset is a stated limitation.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Adversarial Self-Play Red-Teaming (Phase 3)}\label{ch:selfplay}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item the six steps of the self-play pipeline, from the compact defender to the retrained defender
+  \item CTGAN synthetic claims, the Gymnasium environment and the PPO attacker
+\end{itemize}
+\end{chapteroverview}
+
+
+\textbf{Core question.} A model trained on recoveries only learns from fraud that has already happened. Can an AI \emph{invent} new fraud strategies against our own defences, so that the holes get patched before a real person finds them?
+
+Source notebook: \texttt{notebooks/03\_adversarial\_selfplay.ipynb}, generated by \texttt{scripts/build\_selfplay\_notebook.py}. Pipeline scripts: \texttt{scripts/selfplay/\{common, train\_defender, train\_ctgan, fraud\_env, train\_ppo, retrain\_defender\_v2\}.py}.
+
+\section{Pipeline Overview}
+\begin{figure}[H]
+\centering
+\begin{adjustbox}{max width=\textwidth}
+\begin{tikzpicture}[
+  node distance=0.5cm,
+  b/.style={rectangle,draw,rounded corners,fill=green!10,minimum height=1.1cm,minimum width=2.4cm,text width=2.3cm,align=center,font=\scriptsize},
+  arr/.style={-{Stealth},thick}
+]
+\node[b] (n1) {Real claims\\(2013--2016)};
+\node[b,right=of n1] (n2) {\texttt{defender\_v1}\\(Steps 1--2)};
+\node[b,right=of n2] (n3) {CTGAN synthetic claims (Step 3)};
+\node[b,right=of n3] (n4) {\texttt{ClaimFraudEnv}\\(Step 4)};
+\node[b,right=of n4] (n5) {PPO attacker\\(Step 5)};
+\node[b,right=of n5] (n6) {Evasive claims\\(Step 5)};
+\node[b,right=of n6] (n7) {\texttt{defender\_v2}\\(Step 6)};
+\foreach \x/\y in {n1/n2,n2/n3,n3/n4,n4/n5,n5/n6,n6/n7} \draw[arr] (\x)--(\y);
+\end{tikzpicture}
+\end{adjustbox}
+\caption{Self-play pipeline: from real claims to a retrained defender.}\label{fig:selfplay-pipe}
+\end{figure}
+
+\section{Step 1: Feature Set and Encoder (\texttt{common.py})}\label{sec:defv1}
+
+\subsection{Why not reuse the 109-column pipeline}
+The RL environment must cheaply re-score a claim every time the agent changes its claimed amount, possibly hundreds of thousands of times across training. That requires knowing exactly how every input was built so that the amount-dependent ones can be recomputed per step without re-deriving the whole encoding pipeline. The frequency encodings and peer or provider aggregates of \texttt{claims\_ml\_ready.csv} were fitted on the whole dataset and cannot be recomputed at this granularity.
+
+\subsection{The compact feature set}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.6cm} Y@{}}
+\caption{Inputs of the compact self-play defender}\\
+\toprule
+\rowcolor{blue!14} \textbf{Group} & \textbf{Content} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Group} & \textbf{Content} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Continuous & \texttt{AGE}, \texttt{TOTALAMOUNTCLAIMED}, \texttt{NETPREMIUM}, \texttt{GROSSPREMIUM}, plus derived \texttt{CLAIM\_AMOUNT\_LOG}; standardised with parameters fitted once on real training data ($\leq$2014) and frozen \\
+Categorical (12, one-hot) & \texttt{GENDER}, \texttt{MARITAL STATUS}, \texttt{AGEBAND}, \texttt{DEPENDENCY}, \texttt{NETWORK TYPE}, \texttt{FOB}, \texttt{CHRONIC}, \texttt{PREEXISTING}, \texttt{CLAIMTYPE}, \texttt{PROVIDER EMIRATE}, \texttt{PROVIDERTYPE}, \texttt{ICD CHAPTER}; gaps filled as in Phase~2 (\texttt{PROVIDER EMIRATE} NaN $\to$ ``Unknown''; premiums NaN $\to$ median) \\
+Amount-independent engineered (8) & \texttt{MEMBER\_TENURE\_DAYS}, \texttt{DAYS\_TO\_RECEPTION}, \texttt{RESUBMISSION\_FLAG}, \texttt{PROVIDER\_CLAIM\_FREQ}, \texttt{NETWORK\_CLAIM\_FREQ}, \texttt{CLAIM\_MONTH}, \texttt{CLAIM\_QUARTER}, \texttt{CLAIM\_IS\_WEEKEND}; pulled pre-scaled from \texttt{claims\_ml\_ready.csv} (row-position join, verified in Section~\ref{sec:leakage}) \\
+\midrule
+\textbf{Total encoded width} & \textbf{81 dimensions} \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+The eight engineered columns are safe to freeze per baseline claim, because the agent never controls timing, provider identity or resubmission in this MVP: it controls only the claimed amount.
+
+\subsection{\texttt{encode\_amount\_only()}}
+Given an already-encoded baseline row, it recomputes \emph{only} the two amount-derived entries (\texttt{TOTALAMOUNTCLAIMED\_scaled} and \texttt{CLAIM\_AMOUNT\_LOG\_scaled}) for a new claimed amount. Demographics, provider, diagnosis and timing stay frozen. This is what makes per-step re-scoring cheap enough for RL.
+
+\begin{lstlisting}[caption={Re-scoring a new amount (illustrative).}]
+def encode_amount_only(encoded_row, amount, scaler):
+    row = encoded_row.copy()
+    row["TOTALAMOUNTCLAIMED_scaled"] = (amount - scaler.mean_amt) / scaler.std_amt
+    log_amt = np.log1p(amount)
+    row["CLAIM_AMOUNT_LOG_scaled"] = (log_amt - scaler.mean_log) / scaler.std_log
+    return row
+\end{lstlisting}
+
+\begin{caution}[Deliberate exclusion, and its consequence]
+\texttt{PEER\_ZSCORE}, \texttt{AMOUNT\_OVER\_MEDIAN} and \texttt{PROVIDER\_AVG\_AMOUNT}, the amount-derived features built in the data pipeline, are \emph{not} in this feature set. They depend on peer or provider group statistics that would themselves have to shift as the agent changes its claimed amount, which the per-step function does not handle. This exclusion is the most likely cause of the main finding of Chapter~\ref{ch:results}; it is stated here so that it is not a surprise later.
+\end{caution}
+
+\section{Step 2: \texttt{defender\_v1}, the Static XGBoost Defender}
+
+\begin{caution}[Where the defender is used]
+\texttt{defender\_v1} is an \texttt{XGBClassifier} trained specifically for self-play (\texttt{train\_defender.py}); \texttt{defender\_v2} is the same model retrained on the discovered attacks (\texttt{retrain\_defender\_v2.py}). During attacker training the frozen defender is loaded by \texttt{train\_ppo.py} and used by \texttt{fraud\_env.py} to score every claim the agent submits.
+\end{caution}
+
+\begin{lstlisting}[caption={Defender v1.}]
+XGBClassifier(n_estimators=300, learning_rate=0.05, max_depth=5,
+              scale_pos_weight=negative/positive, tree_method="hist")
+\end{lstlisting}
+
+It is trained on the 81-dimension encoding of real claims from years $\leq$2014 and evaluated on the 2015--2016 holdout: a temporal split that trains on the past and evaluates on later years.
+
+\begin{center}
+\small
+\captionof{table}{Holdout metrics of defender v1}
+\begin{tabular}{@{}l r@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Metric (holdout 2015--2016)} & \textbf{Defender v1} \\
+\midrule
+PR-AUC & 0.0339 \\
+ROC-AUC & 0.8318 \\
+Recall@5\% & 55.5\% \\
+Detection threshold (95th percentile of training scores) & 0.0117 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{How to read these numbers.} A random scorer has a PR-AUC equal to the positive rate (below 0.001), so 0.0339 is far above chance. A Recall@5\% of 55.5\% means that reviewing the riskiest 5\% of claims finds 55.5\% of the recoveries, a lift of about $11\times$ over random review.
+
+\paragraph{Why the defender is weak.} The reduced feature set lacks the peer-deviation and provider-amount features, the ones that judge an amount against similar claims. This was checked during development, in a run that is not part of the final notebook: a first attempt with only the raw columns (no timing or provider-history features) scored a PR-AUC of 0.0040; adding the eight amount-independent engineered columns from the data pipeline brought it to 0.0339. The engineered features carry real signal, so the pipeline works; what the defender lacks is an explicit feature that compares an amount with similar claims. A tree model could in principle learn such interactions from amount, claim category and diagnosis chapter, but it has no direct signal for them.
+
+\paragraph{Detection threshold.} The threshold (0.0117) is the 95th percentile of the defender's own scores on its training data. A claim is ``caught'' if it would fall in the riskiest 5\% by this defender's own judgement, mirroring an audit team that can review only the riskiest 5\% of claims.
+
+\section{Step 3: CTGAN Synthetic Claims}\label{sec:ctgan}
+
+\subsection{Why synthetic data}
+Reinforcement learning needs a very large number of interactions. Training directly on real insurance claims would risk overfitting to specific records, expose sensitive customer information and limit the number of episodes. A synthetic claim pool solves all three.
+
+\subsection{Training}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.6cm} Y@{}}
+\caption{CTGAN training configuration}\\
+\toprule
+\rowcolor{blue!14} \textbf{Setting} & \textbf{Value} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Setting} & \textbf{Value} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Model & CTGAN \cite{xu2019ctgan}, 150 epochs \\
+Training sample & 40{,}000 rows of real claims from 2014 and earlier \\
+Recovered claims & The 252 real recovered claims are oversampled so the generator sees enough of them (real rate about 0.084\%) \\
+Conditioning column & \texttt{RECOVERY\_FLAG} \\
+Compute & CPU, about 1{,}240 s (about 21 minutes) \\
+Output & 20{,}000 synthetic claims $\times$ 17 columns \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+CTGAN learned the statistical structure of claim amounts, beneficiary demographics, provider characteristics, premium information and claim attributes. \emph{The RL environment never reads a real claim row:} every episode starts from a synthetic template.
+
+\subsection{Data-quality validation}
+Several sanity checks were run and documented instead of being assumed.
+
+\begin{center}
+\small
+\captionof{table}{Summary statistics of the 20{,}000 synthetic claims.}
+\begin{tabular}{@{}l r r r r@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Statistic} & \textbf{AGE} & \textbf{TOTALAMOUNTCLAIMED} & \textbf{NETPREMIUM} & \textbf{GROSSPREMIUM} \\
+\midrule
+count & 20{,}000 & 20{,}000 & 20{,}000 & 20{,}000 \\
+mean & 30.03 & 550.13 & 3{,}904.36 & 4{,}171.74 \\
+std & 17.24 & 1{,}644.55 & 3{,}444.56 & 3{,}421.55 \\
+min & 0.00 & 1.00 & $-$10.77 & 75.82 \\
+25\% & 22.81 & 95.18 & 1{,}829.65 & 1{,}978.85 \\
+median & 30.33 & 178.04 & 3{,}459.36 & 4{,}042.18 \\
+75\% & 41.39 & 448.06 & 4{,}816.24 & 5{,}672.73 \\
+max & 81.29 & 23{,}526.75 & 32{,}585.64 & 35{,}768.91 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\fig{fig-ctgan-synthetic.png}{Synthetic claims: distribution of $\log(1+\texttt{TOTALAMOUNTCLAIMED})$ (left) and provider-type mix (right).}{0.98}{fig:ctgan}
+
+\begin{itemize}[nosep]
+  \item \textbf{Amount distribution.} The histogram of $\log(1+\text{amount})$ is right-skewed with a mode around 5 (about AED 150), which resembles a realistic insurance claim distribution. The goal was not to reproduce the real data perfectly, but to check reasonable ranges, realistic skewness and the absence of impossible patterns.
+  \item \textbf{Non-positive amounts.} \textbf{598 rows (2.99\%)} came out with a \texttt{TOTALAMOUNTCLAIMED} below 1.0 AED, 581 of them negative. They were clipped to a floor of 1.0 AED, which is the spike at about 0.7 on the left of the histogram ($\log(1+1)=0.69$). This is a known behaviour of GANs on heavily right-skewed columns, and the clip rate itself is a reasonable quality indicator of the generator.
+  \item \textbf{Provider mix.} Synthetic claims contain hospitals (about 9{,}000), pharmacies (about 7{,}000) and polyclinics or diagnostic centres (about 3{,}700).
+  \item \textbf{Net premium.} A small negative minimum ($-10.77$) appears in \texttt{NETPREMIUM}; only the claim amount was clipped, and the effect is negligible for this MVP.
+\end{itemize}
+
+\subsection{A known quirk: the synthetic recovery rate}
+The synthetic \texttt{RECOVERY\_FLAG} rate is \textbf{6.48\%}, far above the real training rate of 0.084\%. This is CTGAN's documented training-by-sampling behaviour \cite{xu2019ctgan}: rare discrete values are intentionally oversampled during training, and unconditioned \texttt{.sample()} reproduces that skewed distribution unless a condition vector is supplied. \textbf{This does not distort anything downstream}: the flag is metadata carried through the CSV and never read by \texttt{ClaimFraudEnv} as a feature. The environment only uses a synthetic claim's demographic, provider and amount fields as a template to build a fraud attempt on.
+
+\section{Step 4: The Environment \texttt{ClaimFraudEnv}}
+
+\subsection{Formulation}
+Each \textbf{episode} is one synthetic baseline claim drawn from the 20{,}000-row pool. The agent has a \textbf{fraud budget} equal to three times the claim's legitimate amount and at most five submissions to extract it. In plain words: the thief wants to take as much of the budget as possible without being caught.
+
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.2cm} Y@{}}
+\caption{Definition of the MDP of ClaimFraudEnv}\\
+\toprule
+\rowcolor{blue!14} \textbf{MDP element} & \textbf{Definition} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{MDP element} & \textbf{Definition} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+State (observation, 83 dims) & The 81-dimensional encoded baseline claim, plus the remaining-budget fraction and the steps-remaining fraction \\
+Action & One continuous value in $[-1,1]$ (the Stable-Baselines3 convention), rescaled to $[0,1]$ inside the environment: the \emph{fraction of the remaining budget to submit} at this step \\
+Transition & The chosen amount is written into a copy of the baseline row with \texttt{encode\_amount\_only()} and scored by \texttt{defender\_v1} \\
+Not caught (score below threshold) & The amount is banked, the budget shrinks and the episode continues, up to five steps or until the budget is exhausted \\
+Caught (score at or above threshold) & The episode ends immediately, the whole remaining budget $R_t$ (including the flagged sub-claim) is forfeited, and a penalty of $1.5\,R_t/B$ is applied (see the reward function below); rewards banked at earlier steps are kept \\
+Frozen per episode & Demographics, provider, diagnosis, timing, resubmission \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\begin{lstlisting}[caption={Step logic (illustrative reconstruction of the documented behaviour).}]
+def step(action):
+    frac   = (action + 1.0) / 2.0                 # rescale [-1, 1] -> [0, 1]
+    amount = frac * budget_remaining              # fraction of remaining budget
+    row    = encode_amount_only(baseline_row, amount)
+    score  = defender.predict_proba(row)[1]
+    steps_left -= 1
+    if score >= threshold:                        # caught
+        caught = True
+        budget_remaining = 0.0                    # remaining budget forfeited (earlier rewards kept)
+        done = True
+    else:                                         # evaded
+        amount_kept      += amount                # separate accumulator (see bug fix)
+        budget_remaining -= amount
+        done = (budget_remaining <= 0) or (steps_left == 0)
+\end{lstlisting}
+
+\subsection{Reward function}\label{sec:reward}
+The reward is defined with the following quantities.
+
+\begin{itemize}[nosep]
+  \item $B = 3.0 \times \texttt{TOTALAMOUNTCLAIMED}$ is the total fraud budget (\texttt{FRAUD\_BUDGET\_MULTIPLIER} = 3.0).
+  \item $R_t$ is the budget still left \emph{before} step $t$; it starts at $R_1 = B$.
+  \item The agent submits $a_t = \text{frac}\times R_t$, where $\text{frac} = \operatorname{clip}\big((\text{action}+1)/2,\,0,\,1\big)$.
+  \item The agent is \textbf{caught} when the defender's \texttt{predict\_proba} is greater than or equal to the detection threshold.
+\end{itemize}
+
+The reward at each step is
+\[
+r_t=
+\begin{cases}
+\dfrac{a_t}{B} & \text{if not caught (the amount is banked)},\quad R_{t+1}=R_t-a_t,\\[2ex]
+-\,1.5\,\dfrac{R_t}{B} & \text{if caught, the episode ends and } R \text{ is set to } 0.
+\end{cases}
+\]
+
+\begin{center}
+\small
+\captionof{table}{Reward of one step of \texttt{ClaimFraudEnv}.}
+\begin{tabular}{@{}l l l@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Outcome} & \textbf{Reward} & \textbf{Effect} \\
+\midrule
+Not caught (banked) & $r_t = a_t / B$ & $R_{t+1} = R_t - a_t$ and the episode continues \\
+Caught & $r_t = -1.5\,R_t / B$ & The episode ends and $R$ is set to 0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{itemize}[nosep]
+  \item \textbf{Banked reward.} Each banked currency unit is worth $1/B$. If the agent banks the whole budget, the episode return is exactly $+1.0$.
+  \item \textbf{Detection penalty.} \texttt{CAUGHT\_PENALTY\_SCALE} = 1.5 multiplies the remaining budget as a fraction of $B$. Because $R_t$ is read \emph{before} the flagged claim is subtracted, the flagged sub-claim is part of the penalty. The penalty ranges from $-1.5$ (caught at the first step, when $R_t=B$) to nearly 0 (caught after almost everything has been banked).
+  \item \textbf{Termination.} An episode stops (\emph{terminated}) when the agent is caught. It is \emph{truncated} after \texttt{MAX\_STEPS} = 5 steps or once $R \leq 10^{-6}$.
+\end{itemize}
+
+\paragraph{Worked example.} If the agent banks 60\% of $B$ and is then caught with 40\% of $B$ remaining, its episode return is $0.6 - 1.5\times 0.4 = 0.0$.
+
+\begin{caution}[Getting caught is not a total loss]
+Rewards banked at earlier steps are \emph{not} taken back when the agent is caught. Getting caught forfeits the \emph{remaining} budget and adds the penalty above, so the return can be zero, or negative if the agent is caught early, but it is not automatically a total loss. A code comment in the environment states that ``getting caught loses everything''; it overstates the behaviour, and this report uses the formula above.
+\end{caution}
+
+\subsection{Strategies are not hard-coded}
+Two example tricks named in the proposal, \emph{splitting} a claim into several smaller ones and \emph{staying under an alert threshold}, are not coded into the environment. They can \emph{emerge} from the amount-fraction policy that the agent learns (Section~\ref{sec:res-strategy}).
+
+\subsection{Metrics}
+\begin{itemize}[nosep]
+  \item \textbf{Attack success rate:} share of evaluation episodes in which the agent is not caught (tracked through the \texttt{caught} flag).
+  \item \textbf{Mean fraud budget kept:} average fraction of the initial fraud budget that the agent banks (\texttt{kept\_fraction}).
+\end{itemize}
+
+\subsection{A bug found and fixed during development}
+The \texttt{kept\_fraction} metric was first computed from \texttt{budget\_remaining}, which the step logic sets to zero on capture for internal bookkeeping. As a result, every \emph{caught} episode incorrectly reported \texttt{kept\_fraction = 1.0}, as if nothing had been lost, although getting caught means forfeiting the rest. The fix introduced a separate \texttt{amount\_kept} accumulator that increases only on non-caught steps. \textbf{The bug never affected the attack success rate}, which is tracked independently through the \texttt{caught} flag. This is why the two training runs before and after the fix show identical success-rate curves but different kept-fraction curves, and how the bug was detected.
+
+\section{Step 5: PPO Training and the Random Baseline}
+\begin{lstlisting}[caption={PPO configuration.}]
+PPO("MlpPolicy", n_steps=1024, batch_size=256, learning_rate=3e-4)
+# 200,000 timesteps; attack success measured on 300 held-out episodes
+# every 10,000 timesteps
+\end{lstlisting}
+
+Before training, a \emph{random policy} (random amount fractions) is evaluated. It is the reference for what learning adds: any real learning must beat what chance already achieves. The results are in Section~\ref{sec:res-ppo}.
+
+\section{Step 6: Retraining the Defender (\texttt{defender\_v2})}\label{sec:retrain}
+The agreed MVP stopped at ``single agent against a static defender''. This step goes one round further. It is a single-round taste of the proposal's co-evolution loop: feed the discovered attacks to the defender and retrain.
+
+\begin{enumerate}[nosep]
+  \item Run the trained policy on evaluation episodes and save the \textbf{successful evasive sub-claims}: 337 of them.
+  \item Label them as fraud (1) and add them to the real training data: 252 original positives + 337 adversarial positives = \textbf{589 positives}, on top of the same negatives.
+  \item Retrain XGBoost with the \emph{same hyperparameters} as \texttt{defender\_v1}, producing \texttt{defender\_v2}.
+  \item \textbf{Do not retrain the PPO agent.} Re-evaluate the \emph{same frozen policy} against \texttt{defender\_v2}, which isolates the effect of the defender's improvement.
+\end{enumerate}
+
+\section{Evaluation Protocol Summary}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.2cm} Y@{}}
+\caption{Evaluation protocol of the self-play experiments}\\
+\toprule
+\rowcolor{blue!14} \textbf{Item} & \textbf{Protocol} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Item} & \textbf{Protocol} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Detector quality (real data) & Train on years $\leq$2014, holdout 2015--2016; PR-AUC, ROC-AUC, Recall@5\% \\
+Attacker quality & Attack success rate and mean budget kept, on 300 episodes per checkpoint \\
+Learning vs.\ chance & Compare with the random policy \\
+Strategy analysis & Number of sub-claims in each successful episode \\
+Effect of retraining & Same frozen agent against \texttt{defender\_v1} and \texttt{defender\_v2} \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item Defender v1: 81 encoded features, holdout PR-AUC 0.0339, Recall@5\% 55.5\%.
+  \item CTGAN produced 20{,}000 synthetic claims; the sandbox never reads real claims.
+  \item The environment gives a 3$\times$ fraud budget and at most five submissions.
+  \item PPO ran for 200{,}000 steps; retraining used 337 discovered evasive claims.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Results, Red-Team Report and Discussion}\label{ch:results}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item attack success against the static defender, with statistical caution
+  \item the strategies discovered, the effect of retraining and the red-team report
+  \item answers to the objectives and guiding questions, and an honest discussion
+\end{itemize}
+\end{chapteroverview}
+
+
+\section{Attack Success Against the Static Defender}\label{sec:res-ppo}
+
+\begin{center}
+\small
+\captionof{table}{Random policy versus trained PPO policy against the static defender.}
+\begin{tabular}{@{}l r r@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Policy vs.\ \texttt{defender\_v1}} & \textbf{Attack success} & \textbf{Mean budget kept} \\
+\midrule
+Random policy & 86.0\% & 84.6\% \\
+Trained PPO policy & 90.3\% & 88.2\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\fig{fig-ppo-curve.png}{Attack success rate (left) and mean fraud budget kept (right) over PPO training, measured on 300 held-out episodes every 10{,}000 timesteps; the dashed line is the random-policy baseline.}{0.98}{fig:ppo-curve}
+
+\subsection{What the curves show}
+\begin{itemize}[nosep]
+  \item \textbf{Attack success} stays between about 89\% and 92\% from the first checkpoint to the last, with one spike to 96\% at 60{,}000 steps, and \emph{always above} the random baseline of 86\%. There is no upward trend: the curve is essentially flat from the first checkpoint onwards.
+  \item \textbf{Budget kept} fluctuates between about 83\% and 90\%. It falls \emph{below} the random baseline of 84.6\% at three checkpoints (50{,}000, 70{,}000 and 80{,}000 steps, lowest 82.6\%), so the average amount extracted is not reliably improved by learning.
+  \item The final evaluation gives 90.3\% attack success, i.e.\ 271 of 300 episodes not caught, and 88.2\% mean budget kept.
+\end{itemize}
+
+\subsection{Reading the result correctly}
+\begin{keyresult}[The most important honest finding of the MVP]
+A \emph{random} policy already wins 86\% of the time against \texttt{defender\_v1}. This is not evidence that real insurance fraud is trivially easy. It is most likely explained by the decision to exclude the peer-deviation and provider-amount features from this defender.
+\end{keyresult}
+
+Without those features, \texttt{defender\_v1} has no direct way to judge whether a claimed amount is abnormal \emph{relative to what similar claims usually cost}. It only sees whether the raw claim looks unusual against the whole population's demographic and timing mix, and a single claim at three times the legitimate amount probably does not look unusual on those terms alone. Because a random policy already wins most of the time, there is little room for learning to improve on: most of the achievable value was captured by chance. The practical conclusion is that \emph{a weak defender is vulnerable not only to a sophisticated learned attack but to almost anything}, which argues for closing the suspected blind spot before building a more elaborate attacker.
+
+\begin{plainwords}
+If a burglar who tries doors at random gets in 86 times out of 100, the problem is the lock, not the burglar. Training a cleverer burglar then adds only a few more break-ins.
+\end{plainwords}
+
+\subsection{A note on statistical uncertainty}
+Each checkpoint uses 300 episodes. With a success rate near 90\%, the standard error is roughly $\sqrt{0.9\times0.1/300}\approx1.7$ percentage points, so the fluctuations between 89\% and 92\% are within noise, and only the 96\% spike stands out. The random baseline was also measured on 300 episodes, so the 4.3-point gap between 86.0\% and 90.3\% is about 1.6 standard errors: suggestive but not conclusive. The result should therefore be read as ``PPO is at least as good as random, with a possible modest gain'', not as a demonstrated improvement. Repeating the evaluation with more episodes and several random seeds is listed in the future work.
+
+\section{Which Strategy Did the Agent Learn?}\label{sec:res-strategy}
+The 271 successful episodes (out of 300) contain 337 evasive sub-claims. Grouped by the number of sub-claims per episode:
+
+\begin{center}
+\small
+\captionof{table}{Number of sub-claims in successful episodes (the 337 sub-claims are $244\times1+10\times2+5\times3+2\times4+10\times5$).}
+\begin{tabular}{@{}l r r@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Sub-claims per successful episode} & \textbf{Episodes} & \textbf{Share} \\
+\midrule
+1 (single shot) & 244 & 90.0\% \\
+2 & 10 & 3.7\% \\
+3 & 5 & 1.8\% \\
+4 & 2 & 0.7\% \\
+5 & 10 & 3.7\% \\
+\midrule
+\textbf{Total} & \textbf{271} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\fig{fig-strategy-split.png}{How the trained agent spends its fraud budget: number of sub-claims in each successful episode.}{0.7}{fig:strategy}
+
+\begin{itemize}[nosep]
+  \item \textbf{The dominant strategy (90\%) is a single, large, one-shot claim for the entire 3$\times$ fraud budget, not splitting.} This is consistent with the diagnosis above: if \texttt{defender\_v1} cannot tell an inflated amount from a normal one without peer-group context, the agent does not need to disguise its claims as several small ones. Brute-force amount inflation already works most of the time.
+  \item \textbf{A minority (about 10\%) splits} the budget across two to five sub-claims. These are presumably the harder baseline claims, with individually riskier demographic, provider or timing combinations, where one claim at 3$\times$ would be too conspicuous and splitting genuinely helps. This explanation is a plausible reading, not a tested fact.
+\end{itemize}
+
+\begin{keyresult}[Red-team takeaway]
+Undetected amount inflation is the \emph{primary} exposure of this defender. Splitting is a \emph{secondary} strategy to which the agent falls back only when the primary one does not work. A report that warned only about splitting, the literal example in the proposal, would have missed the bigger and more common hole.
+\end{keyresult}
+
+\section{Effect of One Retraining Round}\label{sec:res-retrain}
+
+\fig{fig-retraining.png}{The same trained agent before and after one defender-retraining round: attack success rate against \texttt{defender\_v1} (90.3\%) and \texttt{defender\_v2} (22.7\%).}{0.65}{fig:retraining}
+
+\begin{center}
+\small
+\captionof{table}{Defender before and after adversarial retraining.}
+\begin{tabular}{@{}l r r@{}}
+\toprule
+\rowcolor{blue!14} \textbf{Metric} & \textbf{Defender v1} & \textbf{Defender v2} \\
+\midrule
+Training positives & 252 & 589 (252 real + 337 adversarial) \\
+Holdout PR-AUC (2015--2016) & 0.0339 & 0.0489 \\
+Holdout ROC-AUC & 0.8318 & 0.7810 \\
+Detection threshold & 0.0117 & 0.3030 \\
+Attack success (same frozen PPO agent) & 90.3\% & 22.7\% \\
+Mean budget kept (same frozen PPO agent) & 88.2\% & 21.1\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{keyresult}[Result]
+The attack success of the identical, unmodified attacker falls from 90.3\% to 22.7\%, after retraining on only 337 discovered examples. This goes in the direction of the headline indicator of the project proposal (a drop from 90\% to about 12\%) without reaching it, and with a single round instead of a full co-evolution loop.
+\end{keyresult}
+
+\subsection{The mechanism, stated without overselling}
+\begin{itemize}[nosep]
+  \item \texttt{defender\_v2} did \emph{not} become much smarter about fraud in general. Its real-data PR-AUC moved only from 0.034 to 0.049, and its ROC-AUC \emph{decreased} from 0.832 to 0.781, which suggests that the retraining moved the decision boundary toward the amount ranges resembling this attacker's submissions, at a small cost in broader generalisation.
+  \item What happened is narrower and more mechanical: the defender learned that ``claimed amounts in the range this attacker was using are suspicious'', which closes exactly the hole this attacker had found. The change of the detection threshold (0.0117 to 0.3030) reflects the very different score distribution of the retrained model.
+  \item \textbf{The promise:} discovered holes close quickly and cheaply, with one round, 337 examples and a few minutes of work.
+  \item \textbf{The limit:} the evaluation attacker is the \emph{same} attacker whose examples trained \texttt{defender\_v2}, so the large drop is partly expected. One round does not generalise to holes not yet discovered. The real test is a \emph{fresh or re-adapted} attacker against \texttt{defender\_v2}, which is exactly the argument for many rounds and an attacker that keeps adapting.
+\end{itemize}
+
+\section{Red-Team Report}\label{sec:redteam}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.0cm} Y Y@{}}
+\caption{Red-team report: findings and suggested patches}\\
+\toprule
+\rowcolor{blue!14} \textbf{Finding} & \textbf{Detail} & \textbf{Suggested patch} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Finding} & \textbf{Detail} & \textbf{Suggested patch} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Undetected amount inflation & A single-shot claim at 3$\times$ the legitimate amount evades \texttt{defender\_v1}; it is the dominant discovered strategy (about 90\% of successful episodes) & Add peer-group deviation features (\texttt{PEER\_ZSCORE}, \texttt{AMOUNT\_OVER\_MEDIAN}, already built in the data pipeline) so amount is judged relative to similar claims and not in isolation \\
+Budget splitting (minority strategy) & About 10\% of successful episodes split the budget across 2--5 sub-claims, apparently for baseline claims where one large claim would be too conspicuous & Add resubmission and frequency-window features that flag several claims from the same profile within a short window (\texttt{CLAIMS\_LAST\_7\_DAYS}, \texttt{CLAIMS\_LAST\_30\_DAYS}); \texttt{RESUBMISSION\_FLAG} and \texttt{PROVIDER\_CLAIM\_FREQ} from Phase~2 are a starting point \\
+A weak defender is beaten by almost anything & A random policy already reaches 86\% attack success: the gap between ``undefended'' and ``RL-optimised attack'' is small when the baseline defence has an amount blind spot & Close the suspected blind spot (peer-deviation features) before hardening against sophisticated attacks the current defender cannot even distinguish from random noise \\
+One retraining round closes a large, specific hole & 90.3\% $\to$ 22.7\% attack success after folding in 337 discovered examples; real-data PR-AUC only 0.034 $\to$ 0.049 (narrow, not general, improvement) & Repeat the round, ideally automatically and with an attacker that keeps adapting, to approach the full co-evolution loop \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\begin{keyresult}[Headline result]
+The self-play defender, which lacks peer-group context, was beaten by simple amount inflation nearly nine times out of ten, even by random chance. One round of adversarial red-teaming, folding just 337 discovered evasive claims back into training, cuts this to roughly two times out of ten. Scaling it into the full co-evolution loop (many rounds, an attacker that keeps adapting, PettingZoo for a two-sided game) is the natural next step, not a change of approach.
+\end{keyresult}
+
+\section{Did the Work Meet Its Objectives?}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}l Y l@{}}
+\caption{Objectives and whether they were met}\\
+\toprule
+\rowcolor{blue!14} \textbf{Objective} & \textbf{Criterion and evidence} & \textbf{Status} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Objective} & \textbf{Criterion and evidence} & \textbf{Status} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+SO1 & Key papers reviewed with their limitations; research gaps written down (Chapter~\ref{ch:activities}) & Met \\
+SO2 & Frozen ML-ready file; every removed row counted (1{,}017{,}993 $\to$ 839{,}209); 14 leakage and 21 identifier columns excluded & Met \\
+SO3 & Compact defender re-scorable at RL speed, evaluated on a temporal split with imbalance-aware metrics (holdout PR-AUC 0.0339, Recall@5\% 55.5\%) & Met \\
+SO4 & End-to-end loop with measured attack success before and after retraining (90.3\% $\to$ 22.7\%) & Met as an MVP; one round only \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Answers to the Guiding Questions Tested Experimentally}
+\paragraph{GQ7 -- Do detectors keep working when fraudsters adapt?} In this setting, no: the first defender is beaten 90.3\% of the time, even though it reaches Recall@5\% of 55.5\% on real data. A good score on historical data does not guarantee robustness against adaptation.
+
+\paragraph{GQ10 -- Can attacks be explored without exposing patient data?} Yes: with a closed environment fed only by CTGAN claims (20{,}000 rows), the whole attack and retraining loop ran without any real claim entering the sandbox.
+
+\paragraph{GQ11 -- How weak is our detector against an adaptive attacker?} Very weak when it lacks peer-group amount context: a random attacker already succeeds in 86\% of episodes. After one retraining round, the attack success of the same attacker is 22.7\%.
+
+\paragraph{Challenge.} The challenge asked whether an AI could invent new fraud strategies against our own defences so that holes get patched before a real person finds them. The MVP shows that the mechanism works end to end: the agent found a dominant strategy (amount inflation) and a secondary one (splitting), and patching with the discovered examples reduced that attacker's success sharply. It does \emph{not} show that the patched defender is robust to new strategies.
+
+\section{Discussion}
+
+\subsection{Three readings of the result}
+\begin{enumerate}[nosep]
+  \item \textbf{Ceiling effect.} Because chance already wins 86\%, there is little room for any learning algorithm to show a gain. Comparing with a random policy is therefore essential, and the report keeps it in every comparison.
+  \item \textbf{Detector design.} The main weakness is a design decision (excluded peer features), documented in advance. The experiment is consistent with its expected consequence, but does not isolate it: a direct test would re-run the same attack against a defender \emph{with} the peer-deviation features. This is the first item of the future work. Until that test is run, the claim that peer features would block a 3$\times$ inflation remains a hypothesis.
+  \item \textbf{Operating point.} ``Caught'' means being in the riskiest 5\% of the defender's training scores. A different review budget (for example 10\%) would change every attack success rate.
+\end{enumerate}
+
+\subsection{What the results show and do not show}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}Y Y@{}}
+\caption{What the results support and what they do not}\\
+\toprule
+\rowcolor{blue!14} \textbf{Supported by the results} & \textbf{Not supported by the results} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Supported by the results} & \textbf{Not supported by the results} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+The self-play loop works end to end on synthetic claims & That the patched defender resists unseen strategies \\
+The attack and retraining loop works against the self-play XGBoost defender & That a detector with peer-deviation features can be evaded in the same way \\
+Amount inflation is the primary exposure of a defender without peer context & That real-world fraud succeeds 90\% of the time \\
+A single retraining round sharply reduces the success of the known attacker & That PPO is clearly better than a random attacker (gap within about 1.6 standard errors) \\
+Synthetic data can replace real claims inside the sandbox & That the synthetic claims capture every real-world pattern \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+% =====================================================
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item A random policy already succeeds 86.0\%; PPO reaches 90.3\%.
+  \item 90\% of successful episodes are one inflated claim; about 10\% split the budget.
+  \item One retraining round lowers the same attacker's success from 90.3\% to 22.7\%.
+  \item This closes one known hole; it does not prove general robustness.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Limitations}\label{ch:limits}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item limitations of labels and evidence, of the data pipeline, of the self-play MVP and of the synthetic data
+\end{itemize}
+\end{chapteroverview}
+
+
+\section{Labels and Evidence}
+\begin{itemize}[nosep]
+  \item \textbf{Weak labels.} ``Not recovered'' does not mean ``clean''; it may mean nobody has reviewed the claim. Negative labels are noisy, measured precision is probably a lower bound of true precision, and models learn what reviewers historically caught \cite{ai2022,dupreez2025}.
+  \item \textbf{Label maturity.} Recent claims have had less time to be reviewed, so the recovery rate of the last months (and of the test period) may be understated.
+  \item \textbf{Extreme imbalance.} With 614 positives (252 in the training years), metrics have high variance; a single positive more or less changes a rate noticeably.
+  \item \textbf{Evidence base.} The literature has limited comparability and is concentrated on U.S.\ data \cite{ai2022,dupreez2025}.\end{itemize}
+
+\section{Data and Preprocessing}
+\begin{itemize}[nosep]
+  \item \textbf{Frequency encoding on the whole dataset} leaks a small amount of test-period information into the encoding. It is kept as a stated simplification; the fix is to fit encodings on the training fold only.
+  \item \textbf{17.6\% of rows} were dropped for missing core fields: the largest single reduction. If those rows differ systematically from the others, the conclusions may not carry over to them.
+  \item \textbf{92.8\% join rate.} Claims whose beneficiary could not be matched on name and date of birth have no beneficiary information.
+  \item \textbf{Sparse source columns.} \texttt{REINSURER} is genuinely blank in the source and was dropped.
+  \item \textbf{One insurer, one country.} All results in this report come from Al Hilal Takaful (UAE) data; the Jordan sample is outside its scope, so nothing here shows that the findings transfer to another insurer.
+\end{itemize}
+
+\section{Self-Play MVP}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.1cm} Y Y@{}}
+\caption{Limitations of the self-play MVP}\\
+\toprule
+\rowcolor{blue!14} \textbf{Limitation} & \textbf{Effect} & \textbf{How to address it} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Limitation} & \textbf{Effect} & \textbf{How to address it} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+One retraining round only & No evidence of robustness to new strategies & Automate many rounds with an adapting attacker \\
+Static defender, single-agent environment & Not a true two-sided game & PettingZoo environment \\
+Attacker controls only the claimed amount & Timing, provider, diagnosis and resubmission strategies are not explored & Widen the action space \\
+PPO attacker only & No LLM-based or tool-calling fraudster & Add an LLM-based agent \\
+Reduced defender (peer features excluded) & Attack success is specific to this defender; it is not a real-world rate and says nothing about a detector with peer features & Re-run against a peer-aware defender \\
+\texttt{defender\_v2} improved narrowly & ROC-AUC fell, PR-AUC rose only modestly & Evaluate against a fresh attacker; monitor general performance \\
+Evaluation on 300 episodes, one run & Fluctuations within noise; gap to random not conclusive & More episodes and several seeds \\
+Same attacker for training and evaluation of v2 & The large drop is partly expected & Evaluate with re-trained or different attackers \\
+Fixed review budget (5\%) & Success rates depend on this threshold & Report several operating points \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Synthetic Data}
+\begin{itemize}[nosep]
+  \item Conclusions hold only as far as CTGAN claims resemble real ones. About 3\% of generated amounts fell below 1.0 AED (most of them negative) and were clipped to 1.0 AED; a small negative net premium remains.
+  \item The synthetic recovery rate (6.48\%) does not match reality; it is harmless here because the flag is never read by the environment.
+  \item No formal fidelity test (for example train-on-synthetic, test-on-real) was run; only distribution plots and range checks.
+\end{itemize}
+
+\section{Scope}
+Other solution ideas (temporal and relational models, explainable decision support) were not implemented. The report therefore speaks only about adversarial self-play, built on top of the data pipeline.
+
+% =====================================================
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item Weak labels, label maturity and extreme imbalance limit every metric.
+  \item The MVP has one round, a static defender and a one-variable attacker.
+  \item Attack success rates are specific to this reduced defender.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Future Work}\label{ch:future}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item a prioritised roadmap, directions beyond self-play, and what deployment would require
+\end{itemize}
+\end{chapteroverview}
+
+
+\section{Roadmap}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}l p{4.6cm} Y l@{}}
+\caption{Future-work roadmap}\\
+\toprule
+\rowcolor{blue!14} \textbf{\#} & \textbf{Step} & \textbf{Expected benefit} & \textbf{Priority} \\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{\#} & \textbf{Step} & \textbf{Expected benefit} & \textbf{Priority} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+1 & Add peer-deviation features and frequency-window features to the defender, then re-run the attack & Tests directly the diagnosis that the missing peer context is the main weakness; would close the main hole if the diagnosis holds & High \\
+2 & Automate multi-round co-evolution; report attack success per round until convergence & Shows whether robustness generalises beyond one attacker & High \\
+3 & More evaluation episodes, several seeds, confidence intervals & Separates real gains from noise & High \\
+4 & Evaluate \texttt{defender\_v2} against a fresh or re-adapted attacker & Real test of the retraining gain & High \\
+5 & Fit encodings on the training fold only & Removes the stated leakage simplification & Medium \\
+6 & Widen the action space (timing, provider, diagnosis coding, resubmission) & Discovers strategies beyond amount inflation and splitting & Medium \\
+7 & Two-sided PettingZoo environment & True co-evolution game & Medium \\
+8 & LLM-based or tool-calling fraudster & Richer, more flexible attack strategies & Medium \\
+9 & Report several review budgets ($k$\% = 1, 5, 10) & Operational view of the results & Medium \\
+10 & Formal synthetic-data fidelity tests & Confidence in the sandbox & Medium \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\section{Directions Beyond Self-Play}
+\begin{description}[leftmargin=0.9cm,style=nextline]
+  \item[Temporal and relational models.] Model patient pathways over time and the relations among patients, providers, diagnoses and claims, beyond single-claim features (gaps G2 and G3).
+  \item[Explainable decision support.] Attach evidence and explanations to every flag, with the human auditor as the decision maker (gap G4).
+  \item[Economic context.] Study provider billing changes around tariff changes before treating a deviation as suspicious (gap G1).
+\end{description}
+\section{Towards Deployment}
+Before any operational use, the system would need monitoring for concept drift, periodic retraining, calibration of scores to an audit capacity, explanations attached to every flag, and a governance process that keeps humans in the decision loop (Chapter~\ref{ch:reg}).
+
+% =====================================================
+\begin{chaptersummary}
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item First patch the defender with peer features and re-run the attack.
+  \item Then automate multi-round co-evolution and widen the attacker's action space.
+  \item Beyond self-play: temporal and relational models, explainable decision support.
+\end{itemize}
+\end{chaptersummary}
+
+\chapter{Reflection and Conclusion}\label{ch:conclusion}
+
+\begin{chapteroverview}
+This chapter covers:
+\begin{itemize}[nosep,leftmargin=1.2em]
+  \item a reflection on what worked, what was difficult and what would be done differently
+  \item the conclusion and the answer to the essential question
+\end{itemize}
+\end{chapteroverview}
+
+
+\section{Reflection}
+
+\subsection{What worked}
+\begin{itemize}[nosep]
+  \item \textbf{Counting everything.} Recording every removed row and every excluded column made the pipeline auditable and turned vague cleaning into a clear funnel.
+  \item \textbf{Scoping early.} Settling the MVP scope before building (single agent, static defender, synthetic-only sandbox) kept the work finishable in two months and left room for a useful bonus round.
+  \item \textbf{A baseline for the attacker.} Evaluating a random policy first suggested that the defender, rather than the attacker, was the main problem. Without that comparison, the 90.3\% would have looked like a strong result.
+\end{itemize}
+
+\subsection{What was difficult}
+\begin{itemize}[nosep]
+  \item \textbf{Silent failures.} A join on two ID columns that ran without error but matched nothing, and a metric (\texttt{kept\_fraction}) that was wrong only for caught episodes. Both were found by cross-checking, not by error messages.
+  \item \textbf{Messy exports.} Title rows, corrupted defined names and reference sheets required dedicated loading functions.
+  \item \textbf{Modest results.} The PPO agent barely improved on chance, and the retrained defender improved narrowly on real data. The honest choice was to report this and explain it.
+\end{itemize}
+
+\subsection{What I would do differently}
+\begin{itemize}[nosep]
+  \item Build the random baseline and the peer-aware defender first, and run the attack against both.
+  \item Fit every encoder on the training fold only from the start.
+  \item Use several seeds and more episodes, and keep a reward-function description next to the code.
+\end{itemize}
+
+\subsection{Skills developed}
+Data engineering on messy real-world files; handling extreme class imbalance and weak labels; leakage-aware, temporally valid evaluation; synthetic tabular data with CTGAN; reinforcement learning with Gymnasium and PPO; structured literature analysis; and scientific writing that states limits as clearly as results.
+
+\section{Conclusion}
+This internship followed the Challenge-Based Learning cycle. In \emph{Engage}, it framed the challenge of testing detection against fraud that has not happened yet. In \emph{Investigate}, for the literature review (jointly with Zayneb Troudi), it reviewed the key papers and their limitations, identified the research gaps and investigated the data. In \emph{Act}, it built a leakage-free pipeline from 1{,}017{,}993 raw claim rows to 839{,}209 usable claims with 614 recoveries, and a self-play red team in which a PPO fraudster, acting on 20{,}000 CTGAN synthetic claims, reached a 90.3\% attack success rate against a deliberately reduced XGBoost defender trained for self-play, while a random policy already reached 86.0\%.
+
+The main finding is that the missing peer-group amount features of the defender, rather than the sophistication of the attacker, are the most likely primary weakness: 90\% of successful episodes were a single inflated claim, and a direct test against a peer-aware defender remains to be done. Folding the 337 discovered evasive sub-claims into training reduced the same attacker's success to 22.7\%, which closes one specific hole without proving general robustness.
+
+Returning to the essential question, \emph{how can insurers make fair and trustworthy reimbursement decisions while distinguishing legitimate care from suspicious behaviour?}, the work contributes one concrete answer: test your detector against an adaptive attacker before someone else does, and read the results with their limits in mind. The result is a working minimum viable product with clear next steps (peer-aware defender, multi-round co-evolution, wider action space), not a complete co-evolution system.
+\appendix
+
+\chapter{Reproducibility}\label{app:repro}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{4.2cm} Y@{}}
+\caption{Reproducibility: files and environment}\\
+\toprule
+\rowcolor{blue!14} \textbf{Item} & \textbf{Location} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Item} & \textbf{Location} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Data-processing notebook & \texttt{notebooks/data\_processing.ipynb} (generated by \texttt{scripts/build\_notebook.py}) \\
+Self-play notebook & \texttt{notebooks/03\_adversarial\_selfplay.ipynb} (generated by \texttt{scripts/build\_selfplay\_notebook.py}) \\
+Self-play scripts & \texttt{scripts/selfplay/\{common, train\_defender, train\_ctgan, fraud\_env, train\_ppo, retrain\_defender\_v2\}.py} \\
+Processed data & \texttt{data/processed/}: \texttt{consolidated\_claims\_all\_reports.csv}, \texttt{recovery\_ex\_gratia\_claims.csv}, \texttt{excluded\_rejected\_void\_claims.csv}, \texttt{excluded\_post\_termination\_claims.csv}, \texttt{claims\_ml\_ready.csv} \\
+Environment & Python virtual environment \texttt{scripts/venv} with \texttt{torch} (CPU build), \texttt{gymnasium}, \texttt{stable-baselines3}, \texttt{ctgan}, plus \texttt{xgboost}, \texttt{scikit-learn}, \texttt{pandas}, \texttt{openpyxl} \\
+Train / test years & Column \texttt{CLAIM\_YEAR}, kept raw. Self-play defenders: training $\leq$2014, holdout 2015--2016 \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\chapter{Key Numbers at a Glance}
+{\small
+\begin{xltabular}{\textwidth}{@{}l Y r@{}}
+\caption{Key numbers at a glance}\\
+\toprule
+\rowcolor{blue!14} \textbf{Area} & \textbf{Quantity} & \textbf{Value} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Area} & \textbf{Quantity} & \textbf{Value} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+\multirow{6}{*}{Data} & Raw claim rows (4 utilisation workbooks) & 1{,}017{,}993 \\
+ & Beneficiary rows (5 workbooks) & 159{,}981 \\
+ & Claims matched to a beneficiary (name + date of birth) & 944{,}205 (92.8\%) \\
+ & Post-termination rows removed & 9 \\
+ & Rows removed for missing core fields & 178{,}775 (17.6\%) \\
+ & Clean rows / columns (\texttt{df\_final}) & 839{,}209 / 79 \\
+\midrule
+\multirow{4}{*}{Target and features} & Recovered claims (positive class) & 614 (0.073\%) \\
+ & Leakage columns / identifier columns excluded & 14 / 21 \\
+ & ML-ready file & 839{,}209 $\times$ 110 \\
+ & Peer-deviation groups & ICD chapter $\times$ age band $\times$ FOB \\
+\midrule
+\multirow{4}{*}{Defender v1} & Encoded width & 81 \\
+ & Holdout PR-AUC / ROC-AUC & 0.0339 / 0.8318 \\
+ & Recall@5\% & 55.5\% \\
+ & Detection threshold & 0.0117 \\
+\midrule
+\multirow{5}{*}{CTGAN} & Training sample / epochs & 40{,}000 rows / 150 \\
+ & Real recovered claims oversampled & 252 \\
+ & Synthetic claims & 20{,}000 $\times$ 17 \\
+ & Amounts below 1 AED clipped (of which negative) & 598 (2.99\%) (581) \\
+ & Synthetic recovery rate vs.\ real training rate & 6.48\% vs.\ 0.084\% \\
+\midrule
+\multirow{5}{*}{Environment and PPO} & Fraud budget / maximum submissions & 3$\times$ legitimate amount / 5 \\
+ & Observation dimension & 83 \\
+ & PPO timesteps / evaluation episodes & 200{,}000 / 300 per checkpoint \\
+ & Random policy: success / kept & 86.0\% / 84.6\% \\
+ & Trained policy: success / kept & 90.3\% / 88.2\% \\
+\midrule
+\multirow{5}{*}{Retraining} & Successful episodes / evasive sub-claims & 271 / 337 \\
+ & Training positives for v2 & 589 \\
+ & v2 holdout PR-AUC / ROC-AUC & 0.0489 / 0.7810 \\
+ & Frozen agent vs.\ v2: success / kept & 22.7\% / 21.1\% \\
+ & Detection threshold of v2 & 0.3030 \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\chapter{Model Inputs of the Self-Play Defender}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{3.3cm} p{3.6cm} Y@{}}
+\caption{Model inputs of the self-play defender}\\
+\toprule
+\rowcolor{blue!14} \textbf{Group} & \textbf{Type} & \textbf{Columns} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Group} & \textbf{Type} & \textbf{Columns} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+Continuous & Standardised, frozen scaler fitted on years $\leq$2014 & \texttt{AGE}, \texttt{TOTALAMOUNTCLAIMED}, \texttt{NETPREMIUM}, \texttt{GROSSPREMIUM}, \texttt{CLAIM\_AMOUNT\_LOG} \\
+Categorical & One-hot & \texttt{GENDER}, \texttt{MARITAL STATUS}, \texttt{AGEBAND}, \texttt{DEPENDENCY}, \texttt{NETWORK TYPE}, \texttt{FOB}, \texttt{CHRONIC}, \texttt{PREEXISTING}, \texttt{CLAIMTYPE}, \texttt{PROVIDER EMIRATE}, \texttt{PROVIDERTYPE}, \texttt{ICD CHAPTER} \\
+Engineered, amount-independent & Pre-scaled from the ML-ready file & \texttt{MEMBER\_TENURE\_DAYS}, \texttt{DAYS\_TO\_RECEPTION}, \texttt{RESUBMISSION\_FLAG}, \texttt{PROVIDER\_CLAIM\_FREQ}, \texttt{NETWORK\_CLAIM\_FREQ}, \texttt{CLAIM\_MONTH}, \texttt{CLAIM\_QUARTER}, \texttt{CLAIM\_IS\_WEEKEND} \\
+Environment-only & Appended to the observation & Remaining-budget fraction, steps-remaining fraction \\
+Excluded on purpose & -- & \texttt{PEER\_ZSCORE}, \texttt{AMOUNT\_OVER\_MEDIAN}, \texttt{PROVIDER\_AVG\_AMOUNT} \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+\chapter{List of Figures Produced}
+{\small
+\rowcolors{3}{gray!10}{white}
+\begin{xltabular}{\textwidth}{@{}p{5.2cm} Y p{2.4cm}@{}}
+\caption{Figures produced and where they are used}\\
+\toprule
+\rowcolor{blue!14} \textbf{Figure file} & \textbf{Content} & \textbf{Where used} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\footnotesize\textit{(continued from previous page)}}\\
+\toprule
+\rowcolor{blue!14} \textbf{Figure file} & \textbf{Content} & \textbf{Where used} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{fig-eda-class-balance.png} & Class imbalance (log scale) & Fig.~\ref{fig:eda-balance} \\
+\texttt{fig-eda-monthly.png} & Monthly volume and recovery rate & Fig.~\ref{fig:eda-monthly} \\
+\texttt{fig-eda-fob-network.png} & Recovery rate by category and network & Fig.~\ref{fig:eda-fob} \\
+\texttt{fig-eda-icd-provider.png} & Highest-rate ICD chapters; recovered amount by provider type & Fig.~\ref{fig:eda-icd} \\
+\texttt{fig-ctgan-synthetic.png} & Synthetic amount distribution and provider mix & Fig.~\ref{fig:ctgan} \\
+\texttt{fig-ppo-curve.png} & Attack success and budget kept over training & Fig.~\ref{fig:ppo-curve} \\
+\texttt{fig-strategy-split.png} & Sub-claims per successful episode & Fig.~\ref{fig:strategy} \\
+\texttt{fig-retraining.png} & Attack success before and after retraining & Fig.~\ref{fig:retraining} \\
+\end{xltabular}
+}
+\vspace{0.6em}
+
+
+% =====================================================
+\begin{thebibliography}{99}
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\bibitem{leder2025} J.~Leder-Luis and A.~Malani, ``The Economics of Healthcare Fraud,'' NBER Working Paper No.~33592, 2025.
+\bibitem{berwick2012} D.~M. Berwick and A.~D. Hackbarth, ``Eliminating Waste in US Health Care,'' \emph{JAMA}, vol.~307, no.~14, pp.~1513--1516, 2012.
+\bibitem{dafny2005} L.~Dafny, ``How Do Hospitals Respond to Price Changes?'' \emph{American Economic Review}, vol.~95, no.~5, pp.~1525--1547, 2005.
+\bibitem{ma2002} C.-T.~A. Ma and M.~H. Riordan, ``Health Insurance, Moral Hazard, and Managed Care,'' \emph{Journal of Economics \& Management Strategy}, vol.~11, no.~1, pp.~81--107, 2002.
+\bibitem{diwan2026} R.~M. Diwan, P.~J. Eliason, R.~League, J.~Leder-Luis, R.~C. McDevitt, and J.~W. Roberts, ``Competition and Fraud in Health Care,'' NBER Working Paper No.~34802, 2026.
+\bibitem{ai2018} J.~Ai, R.~Lieberthal, S.~Smith, and R.~Wojciechowski, ``Examining Predictive Modeling--Based Approaches to Characterizing Health Care Fraud,'' Society of Actuaries, 2018.
+\bibitem{ai2022} J.~Ai, J.~Russomanno, S.~Guigou, and R.~Allan, ``A Systematic Review and Qualitative Assessment of Fraud Detection Methodologies in Health Care,'' \emph{North American Actuarial Journal}, vol.~26, no.~1, pp.~1--26, 2022.
+\bibitem{debener2023} J.~Debener, V.~Heinke, and J.~Kriebel, ``Detecting Insurance Fraud Using Supervised and Unsupervised Machine Learning,'' \emph{Journal of Risk and Insurance}, vol.~90, no.~3, pp.~743--768, 2023.
+\bibitem{banulescu2025} D.~Banulescu-Radu and Y.~Kougblenou, ``Data Science for Insurance Fraud Detection,'' in \emph{Handbook of Insurance}, vol.~I, G.~Dionne, Ed. Springer, 2025, pp.~417--446.
+\bibitem{kumaraswamy2022} N.~Kumaraswamy, ``Pharmacy Provider Fraud Detection Utilizing Administrative Claims Data: A Machine Learning Approach,'' Ph.D. dissertation, The University of Texas at Austin, 2022.
+\bibitem{dupreez2025} A.~du Preez, S.~Bhattacharya, P.~Beling, and E.~Bowen, ``Fraud Detection in Healthcare Claims Using Machine Learning: A Systematic Review,'' \emph{Artificial Intelligence in Medicine}, vol.~160, p.~103061, 2025.
+\bibitem{muhammad2025} R.~Muhammad et al., ``Fraud Detection and Explanation in Medical Claims Using GNN Architectures,'' \emph{Scientific Reports}, vol.~15, art.~41734, 2025, doi:10.1038/s41598-025-22910-6.
+\bibitem{saad2026survey} C.~Saad and Z.~Troudi, ``Towards an Integrated, Explainable, and Economically-Aware Framework for Healthcare Insurance Fraud Detection: A Survey with Application to UAE and Jordan Claims Data,'' article in preparation, 2026.
+\bibitem{lunghi2025} D.~Lunghi, Y.~Molinghen, A.~Simitsis, T.~Lenaerts, and G.~Bontempi, ``FRAUD-RLA: A New Reinforcement Learning Adversarial Attack Against Credit Card Fraud Detection,'' \emph{IEEE Transactions on Dependable and Secure Computing}, vol.~23, no.~3, pp.~7468--7481; preprint arXiv:2502.02290, 2025.
+\bibitem{pang2025} Y.~Pang and C.~Li, ``An Attack Method for Medical Insurance Claim Fraud Detection Based on Generative Adversarial Network,'' arXiv:2506.19871, 2025.
+\bibitem{beling2021} K.~El-Awady, ``Adaptive Stress Testing for Adversarial Learning in a Financial Environment,'' arXiv:2107.03577, 2021.
+\bibitem{gdpr} European Parliament and Council, ``Regulation (EU) 2016/679 (General Data Protection Regulation -- GDPR),'' 2016.
+\bibitem{uaepdpl} United Arab Emirates, ``Federal Decree-Law No.~45 of 2021 on the Protection of Personal Data (PDPL),'' 2021.
+\bibitem{jordanpdpl} Hashemite Kingdom of Jordan, ``Personal Data Protection Law No.~24 of 2023,'' 2023.
+\bibitem{saudipdpl} Saudi Data and Artificial Intelligence Authority (SDAIA), ``Personal Data Protection Law (PDPL),'' 2023.
+
+% --- Method references ---
+\bibitem{chen2016xgboost} T.~Chen and C.~Guestrin, ``XGBoost: A scalable tree boosting system,'' in \emph{Proc.\ 22nd ACM SIGKDD Int.\ Conf.\ Knowledge Discovery and Data Mining}, 2016.
+\bibitem{xu2019ctgan} L.~Xu, M.~Skoularidou, A.~Cuesta-Infante, and K.~Veeramachaneni, ``Modeling tabular data using conditional GAN,'' in \emph{Advances in Neural Information Processing Systems}, 2019.
+\bibitem{schulman2017ppo} J.~Schulman, F.~Wolski, P.~Dhariwal, A.~Radford, and O.~Klimov, ``Proximal policy optimization algorithms,'' arXiv:1707.06347, 2017.
+\bibitem{raffin2021sb3} A.~Raffin et al., ``Stable-Baselines3: Reliable reinforcement learning implementations,'' \emph{Journal of Machine Learning Research}, vol.~22, no.~268, pp.~1--8, 2021.
+\bibitem{towers2024gymnasium} M.~Towers et al., ``Gymnasium: A standard interface for reinforcement learning environments,'' arXiv:2407.17032, 2024.
+\bibitem{saito2015} T.~Saito and M.~Rehmsmeier, ``The precision-recall plot is more informative than the ROC plot when evaluating binary classifiers on imbalanced datasets,'' \emph{PLoS ONE}, vol.~10, no.~3, e0118432, 2015.
+
+\end{thebibliography}
+
+\end{document}
