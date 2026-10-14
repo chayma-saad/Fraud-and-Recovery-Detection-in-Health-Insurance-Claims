@@ -1,0 +1,27 @@
+# Python 3.14
+# torch is the CPU-only build; install it with:
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Data loading & processing
+numpy==2.5.2
+pandas==2.3.3
+openpyxl==3.1.5
+python-calamine==0.8.2
+
+# Modeling & explainability
+scikit-learn==1.9.0
+lightgbm==4.7.0
+xgboost==3.4.1
+shap==0.52.0
+
+# Adversarial self-play
+torch==2.14.0
+gymnasium==1.3.0
+stable-baselines3==2.9.0
+ctgan==0.12.1
+
+# Plots & notebooks
+matplotlib==3.11.1
+nbformat==5.11.0
+ipython==9.16.1
+jupyter==1.1.1
