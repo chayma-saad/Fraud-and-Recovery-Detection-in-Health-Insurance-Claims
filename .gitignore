@@ -8,8 +8,8 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# Local Claude Code settings
-.claude/settings.local.json
+# Local AI tool settings
+.claude/
 
 # OS
 Thumbs.db
